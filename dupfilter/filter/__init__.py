@@ -18,6 +18,12 @@ class Filter(object):
     def insert(self, value):
         raise NotImplemented
 
+    def exists_many(self, values):
+        raise NotImplemented
+
+    def insert_many(self, values):
+        raise NotImplemented
+
     def _value_hash(self, value):
         return self.value_hash_func(value)
 

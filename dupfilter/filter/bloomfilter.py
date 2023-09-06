@@ -10,6 +10,7 @@ import cachetools
 from dupfilter import utils
 from dupfilter.filter import Filter
 
+
 EXISTS_SCRIPT = """
 local key = KEYS[1]
 local offsets = ARGV
@@ -96,6 +97,9 @@ class BloomFilter(Filter):
             print(e)
             return False
 
+    def exists_many(self, values):
+        pass
+
     def insert(self, value):
         if not value:
             return False
@@ -105,6 +109,9 @@ class BloomFilter(Filter):
             return bool(self.insert_script(keys=[self.key + block], args=offsets))
         except Exception:
             return False
+
+    def insert_many(self, values):
+        pass
 
     def _get_used_proportion(self, key):
         return self._bit_count(key) / self.bit
@@ -150,6 +157,12 @@ class AsyncBloomFilter(BloomFilter):
         pass
 
     async def exists(self, value):
+        pass
+
+    async def insert_many(self, values):
+        pass
+
+    async def exists_many(self, values):
         pass
 
 
