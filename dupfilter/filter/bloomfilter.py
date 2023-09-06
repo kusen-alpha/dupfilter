@@ -5,6 +5,8 @@
 
 import random
 
+import cachetools
+
 from dupfilter import utils
 from dupfilter.filter import Filter
 
@@ -54,7 +56,8 @@ class SimpleHash(object):
 
 class BloomFilter(Filter):
     def __init__(self, server, key, bit=32, hash_num=6, block_num=1,
-                 reset=False, reset_proportion=0.8, *args, **kwargs):
+                 reset=False, reset_proportion=0.8, reset_check_period=7200,
+                 *args, **kwargs):
         """
 
         :param server: The redis obj, redis.Redis()
@@ -64,6 +67,7 @@ class BloomFilter(Filter):
         :param block_num:
         :param reset: 是否进行重置/清除，
         :param reset_proportion: 达到比例后进行重置/清除，
+        :param reset_check_period: 重置/清除比例获取计算周期，
         """
         self.key = key
         if bit > 32:
@@ -79,16 +83,15 @@ class BloomFilter(Filter):
         self.exists_script = self.server.register_script(EXISTS_SCRIPT)
         self.insert_script = self.server.register_script(INSERT_SCRIPT)
         self.reset_script = self.server.register_script(RESET_SCRIPT)
-        self.used = {
-            'proportion': 0
-        }
+        self.reset_info = cachetools.TTLCache(maxsize=2, ttl=reset_check_period)
+        self.reset_info['proportion'] = self._get_used_proportion(self.key + '0')
 
     def exists(self, value):
         if not value:
             return False
         block, offsets = self._get_block_and_offsets(value)
         try:
-            return bool(self.exists_script(keys=[self.key+block], args=offsets))
+            return bool(self.exists_script(keys=[self.key + block], args=offsets))
         except Exception as e:
             print(e)
             return False
@@ -99,17 +102,20 @@ class BloomFilter(Filter):
         block, offsets = self._get_block_and_offsets(value)
         self._reset(block, offsets)
         try:
-            return bool(self.insert_script(keys=[self.key+block], args=offsets))
+            return bool(self.insert_script(keys=[self.key + block], args=offsets))
         except Exception:
             return False
 
+    def _get_used_proportion(self, key):
+        return self._bit_count(key) / self.bit
+
     def _reset(self, current_block, current_offsets):
-        proportion = self.used['proportion']
+        proportion = self.reset_info['proportion']
         block, offsets = self._get_reset_block_and_offsets(
             current_block, current_offsets)
         key = self.key + block
         if not proportion:
-            self.used['proportion'] = self._bit_count(key) / self.bit
+            self.reset_info['proportion'] = self._get_used_proportion(key)
             return
         if proportion < self.reset_proportion:
             return
@@ -117,12 +123,6 @@ class BloomFilter(Filter):
 
     def _bit_count(self, key):
         return self.server.bitcount(key)
-
-    async def async_exists(self, value):
-        pass
-
-    async def async_insert(self, value):
-        pass
 
     def _get_block_and_offsets(self, value):
         value = self._value_hash(value)
@@ -137,12 +137,20 @@ class BloomFilter(Filter):
             if block != current_block:
                 break
         offsets = []
-        random_end = self.block_num+1
+        random_end = self.block_num + 1
         for offset in current_offsets:
             offsets.append(
                 (offset + random.choice(range(1, random_end))) % self.bit
             )
         return block, offsets
+
+
+class AsyncBloomFilter(BloomFilter):
+    async def insert(self, value):
+        pass
+
+    async def exists(self, value):
+        pass
 
 
 if __name__ == '__main__':
