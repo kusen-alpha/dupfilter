@@ -28,9 +28,9 @@ from dupfilter import RedisBloomFilter
 
 server = redis.Redis(host="127.0.0.1", port=6379)
 rbf = RedisBloomFilter(server=server, key="bf", block_num=2)
-print(rbf.insert_many(["1", "2", 3]))
+print(rbf.exists_many(["1", "2", "3"]))
 rbf.insert_many(["1", "2", "3"])
-print(rbf.insert_many(["1", "2", 3]))
+print(rbf.exists_many(["1", "2", "3"]))
 ```
 
 ## Others
