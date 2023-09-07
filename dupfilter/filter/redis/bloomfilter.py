@@ -8,8 +8,7 @@ import random
 import cachetools
 
 from dupfilter import utils
-from dupfilter.filter import Filter
-
+from dupfilter.filter.redis import RedisFilter
 
 EXISTS_SCRIPT = """
 local key = KEYS[1]
@@ -55,7 +54,7 @@ class SimpleHash(object):
         return self.bit & ret
 
 
-class BloomFilter(Filter):
+class BloomFilter(RedisFilter):
     def __init__(self, server, key, bit=32, hash_num=6, block_num=1,
                  reset=False, reset_proportion=0.8, reset_check_period=7200,
                  *args, **kwargs):
@@ -117,13 +116,12 @@ class BloomFilter(Filter):
         return self._bit_count(key) / self.bit
 
     def _reset(self, current_block, current_offsets):
-        proportion = self.reset_info['proportion']
+        proportion = self.reset_info.get('proportion')
         block, offsets = self._get_reset_block_and_offsets(
             current_block, current_offsets)
         key = self.key + block
         if not proportion:
             self.reset_info['proportion'] = self._get_used_proportion(key)
-            return
         if proportion < self.reset_proportion:
             return
         self.reset_script(keys=[key], args=offsets)

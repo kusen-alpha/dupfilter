@@ -6,9 +6,8 @@ from dupfilter import utils
 
 
 class Filter(object):
-    def __init__(self, server, value_hash_func=utils.md5,
+    def __init__(self, value_hash_func=utils.md5,
                  value_compress_func=None):
-        self.server = server
         self.value_hash_func = value_hash_func
         self.value_compress_func = value_compress_func or (lambda value: value)
 
