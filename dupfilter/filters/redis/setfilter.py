@@ -3,7 +3,7 @@
 # email: 1194542196@qq.com
 # date: 2023/9/6
 
-from dupfilter.filter.redis import RedisFilter
+from dupfilter.filters.redis import RedisFilter
 
 EXISTS_SCRIPT = """
 local keys = KEYS

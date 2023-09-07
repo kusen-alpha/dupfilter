@@ -8,26 +8,32 @@ import random
 import cachetools
 
 from dupfilter import utils
-from dupfilter.filter.redis import RedisFilter
+from dupfilter.filters.redis import RedisFilter
 
 EXISTS_SCRIPT = """
-local key = KEYS[1]
+local keys = KEYS
 local offsets = ARGV
-local exist = true
-for _, offset in pairs(offsets) do
-    exist = redis.call('GETBIT', key, offset)
-    if not exist then
-        break
+local result = {}
+for index, key in pairs(keys) do
+    local exist = 1
+    for offset in string.gmatch(offsets[index], "[^,]+") do
+        exist = redis.call('GETBIT', key, offset)
+        if exist == 0 then
+            break
+        end
     end
+    table.insert(result, exist)
 end
-return exist
+return result
 
 """
 INSERT_SCRIPT = """
-local key = KEYS[1]
+local keys = KEYS
 local offsets = ARGV
-for _, offset in pairs(offsets) do
-    redis.call('SETBIT', key, offset, 1)
+for index, key in pairs(keys) do
+    for offset in string.gmatch(offsets[index], "[^,]+") do
+        redis.call('SETBIT', key, offset, 1)
+    end
 end
 return true
 """
@@ -84,70 +90,65 @@ class BloomFilter(RedisFilter):
         self.insert_script = self.server.register_script(INSERT_SCRIPT)
         self.reset_script = self.server.register_script(RESET_SCRIPT)
         self.reset_info = cachetools.TTLCache(maxsize=2, ttl=reset_check_period)
-        self.reset_info['proportion'] = self._get_used_proportion(self.key + '0')
+        self.reset_info['proportions'] = self.proportions
 
     def exists(self, value):
-        if not value:
-            return False
-        block, offsets = self._get_block_and_offsets(value)
-        try:
-            return bool(self.exists_script(keys=[self.key + block], args=offsets))
-        except Exception as e:
-            print(e)
-            return False
+        return self.exists_many([value])[0]
 
     def exists_many(self, values):
-        pass
+        keys, offsets = self._get_keys_and_offsets(values)
+        stats = self.exists_script(keys=keys, args=offsets)
+        return [bool(stat) for stat in stats]
 
     def insert(self, value):
-        if not value:
-            return False
-        block, offsets = self._get_block_and_offsets(value)
-        self._reset(block, offsets)
-        try:
-            return bool(self.insert_script(keys=[self.key + block], args=offsets))
-        except Exception:
-            return False
+        return self.insert_many([value])
 
     def insert_many(self, values):
-        pass
+        keys, offsets = self._get_keys_and_offsets(values)
+        self._reset(','.join(offsets))
+        stat = self.insert_script(keys=keys, args=offsets)
+        return bool(stat)
 
-    def _get_used_proportion(self, key):
-        return self._bit_count(key) / self.bit
+    @property
+    def proportions(self):
+        proportions = {}
+        for block in range(self.block_num):
+            key = self.key + str(block)
+            proportions[key] = self.server.bitcount(key) / self.bit
+        return proportions
 
-    def _reset(self, current_block, current_offsets):
-        proportion = self.reset_info.get('proportion')
-        block, offsets = self._get_reset_block_and_offsets(
-            current_block, current_offsets)
-        key = self.key + block
-        if not proportion:
-            self.reset_info['proportion'] = self._get_used_proportion(key)
+    def _reset(self, current_offsets):
+        proportions = self.reset_info.get('proportions')
+        if not proportions:
+            self.reset_info['proportions'] = self.proportions
+        key, proportion = sorted(
+            list(self.reset_info['proportions'].items()),
+            key=lambda x: x[1])[-1]
         if proportion < self.reset_proportion:
             return
+        current_offsets = [int(offset) for offset in current_offsets.split(',')]
+        offsets = self._get_reset_offsets(current_offsets)
         self.reset_script(keys=[key], args=offsets)
 
-    def _bit_count(self, key):
-        return self.server.bitcount(key)
+    def _get_keys_and_offsets(self, values):
+        values = [self._value_hash(value) for value in values]
+        keys = [self.key + self._get_block(value) for value in values]
+        offsets = [','.join([str(sh.hash(
+            self._value_compress(value))) for sh in self.shs]
+        ) for value in values]
+        return keys, offsets
 
-    def _get_block_and_offsets(self, value):
-        value = self._value_hash(value)
-        block = str(int(value[0:2], 16) % self.block_num)
-        return block, [sh.hash(self._value_compress(value)) for sh in self.shs]
+    def _get_block(self, value):
+        return str(int(value[0:2], 16) % self.block_num)
 
-    def _get_reset_block_and_offsets(self, current_block, current_offsets):
-        while True:
-            block = str(random.choice(range(self.block_num)))
-            if self.block_num == 1:
-                break
-            if block != current_block:
-                break
-        offsets = []
+    def _get_reset_offsets(self, current_offsets):
+        offsets = set()
         random_end = self.block_num + 1
         for offset in current_offsets:
-            offsets.append(
+            offsets.add(
                 (offset + random.choice(range(1, random_end))) % self.bit
             )
-        return block, offsets
+        return list(offsets)
 
 
 class AsyncBloomFilter(BloomFilter):

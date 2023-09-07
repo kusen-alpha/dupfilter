@@ -4,7 +4,7 @@
 # date: 2023/9/7
 import os
 
-from dupfilter.filter import Filter
+from dupfilter.filters import Filter
 
 
 class FileFilter(Filter):

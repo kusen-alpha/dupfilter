@@ -4,9 +4,9 @@
 # date: 2023/9/6
 
 
-from dupfilter.filter.redis.bloomfilter import BloomFilter as RedisBloomFilter
-from dupfilter.filter.redis.stringfilter import \
+from dupfilter.filters.redis.bloomfilter import BloomFilter as RedisBloomFilter
+from dupfilter.filters.redis.stringfilter import \
     StringFilter as RedisStringFilter
-from dupfilter.filter.redis.setfilter import SetFilter as RedisSetFilter
-from dupfilter.filter.file import FileFilter
-from dupfilter.filter.memory import MemoryFilter
+from dupfilter.filters.redis.setfilter import SetFilter as RedisSetFilter
+from dupfilter.filters.file import FileFilter
+from dupfilter.filters.memory import MemoryFilter
