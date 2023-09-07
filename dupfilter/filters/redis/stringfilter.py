@@ -62,3 +62,23 @@ class StringFilter(RedisFilter):
     exists_and_lock_many = exists_many
     confirm = insert
     confirm_many = insert_many
+
+
+class AsyncStringFilter(StringFilter):
+    async def insert(self, value, expire=2592000):
+        stats = await self.insert_many([value], expire)
+        return stats[0]
+
+    async def insert_many(self, values, expire=2592000):
+        keys = [self._value_hash_and_compress(value) for value in values]
+        stats = await self.insert_script(keys=keys, args=[expire])
+        return [bool(stat) for stat in stats]
+
+    async def exists(self, value, expire=7200):
+        stats = await self.exists_many([value], expire)
+        return stats[0]
+
+    async def exists_many(self, values, expire=7200):
+        keys = [self._value_hash_and_compress(value) for value in values]
+        stats = await self.exists_script(keys=keys, args=[expire])
+        return [bool(stat) for stat in stats]

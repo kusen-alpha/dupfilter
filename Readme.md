@@ -33,6 +33,29 @@ rbf.insert_many(["1", "2", "3"])
 print(rbf.exists_many(["1", "2", "3"]))
 ```
 
+## AsyncRedisBloomFilter
+
+```python
+import asyncio
+import aioredis
+from dupfilter import AsyncRedisBloomFilter
+
+
+async def test():
+    server = aioredis.from_url('redis://127.0.0.1:6379/0')
+    bf = AsyncRedisBloomFilter(server, key='bf')
+    stats = await bf.exists_many(["1", "2", "3"])
+    print(stats)
+    await bf.insert_many(["1", "2", "3"])
+    stats = await bf.exists_many(["1", "2", "3"])
+    print(stats)
+
+
+loop = asyncio.get_event_loop()
+loop.run_until_complete(test())
+
+```
+
 ## Others
 
 和上述示例类似
