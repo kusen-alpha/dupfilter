@@ -90,7 +90,7 @@ class BloomFilter(RedisFilter):
         self.insert_script = self.server.register_script(INSERT_SCRIPT)
         self.reset_script = self.server.register_script(RESET_SCRIPT)
         self.reset_info = cachetools.TTLCache(maxsize=2, ttl=reset_check_period)
-        self.reset_info['proportions'] = self.proportions
+        self.reset_info['proportions'] = {}
 
     def exists(self, value):
         return self.exists_many([value])[0]
@@ -152,17 +152,45 @@ class BloomFilter(RedisFilter):
 
 
 class AsyncBloomFilter(BloomFilter):
-    async def insert(self, value):
-        pass
 
     async def exists(self, value):
-        pass
-
-    async def insert_many(self, values):
-        pass
+        stats = await self.exists_many([value])
+        return stats[0]
 
     async def exists_many(self, values):
-        pass
+        keys, offsets = self._get_keys_and_offsets(values)
+        stats = await self.exists_script(keys=keys, args=offsets)
+        return [bool(stat) for stat in stats]
+
+    async def insert(self, value):
+        return await self.insert_many([value])
+
+    async def insert_many(self, values):
+        keys, offsets = self._get_keys_and_offsets(values)
+        await self._reset(','.join(offsets))
+        stat = await self.insert_script(keys=keys, args=offsets)
+        return bool(stat)
+
+    async def _reset(self, current_offsets):
+        proportions = self.reset_info.get('proportions')
+        if not proportions:
+            self.reset_info['proportions'] = await self.proportions
+        key, proportion = sorted(
+            list(self.reset_info['proportions'].items()),
+            key=lambda x: x[1])[-1]
+        if proportion < self.reset_proportion:
+            return
+        current_offsets = [int(offset) for offset in current_offsets.split(',')]
+        offsets = self._get_reset_offsets(current_offsets)
+        await self.reset_script(keys=[key], args=offsets)
+
+    @property
+    async def proportions(self):
+        proportions = {}
+        for block in range(self.block_num):
+            key = self.key + str(block)
+            proportions[key] = await self.server.bitcount(key) / self.bit
+        return proportions
 
 
 if __name__ == '__main__':

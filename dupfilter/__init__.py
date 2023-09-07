@@ -5,6 +5,8 @@
 
 
 from dupfilter.filters.redis.bloomfilter import BloomFilter as RedisBloomFilter
+from dupfilter.filters.redis.bloomfilter import \
+    AsyncBloomFilter as AsyncRedisBloomFilter
 from dupfilter.filters.redis.stringfilter import \
     StringFilter as RedisStringFilter
 from dupfilter.filters.redis.setfilter import SetFilter as RedisSetFilter
