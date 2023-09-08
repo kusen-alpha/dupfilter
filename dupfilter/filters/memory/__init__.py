@@ -14,9 +14,16 @@ class MemoryFilter(Filter):
         value = self._value_hash_and_compress(value)
         return value in self.dups
 
+    def exists_many(self, values):
+        return [self.exists(value) for value in values]
+
     def insert(self, value):
         value = self._value_hash_and_compress(value)
         self.dups.add(value)
+        return True
+
+    def insert_many(self, values):
+        _ = [self.insert(value) for value in values]
         return True
 
     def exists_and_insert(self, value):
@@ -25,12 +32,6 @@ class MemoryFilter(Filter):
         if not stats:
             self.dups.add(value)
         return stats
-
-    def exists_many(self, values):
-        return [self.exists(value) for value in values]
-
-    def insert_many(self, values):
-        return [self.insert(value) for value in values]
 
     def exists_and_insert_many(self, values):
         return [self.exists_and_insert(value) for value in values]

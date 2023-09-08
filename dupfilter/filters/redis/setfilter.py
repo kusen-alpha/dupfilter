@@ -90,7 +90,8 @@ class SetFilter(RedisFilter):
     def insert_many(self, values):
         keys, values = self._get_keys_and_values(values)
         self._reset(len(keys))
-        return self.insert_script(keys=keys, args=values)
+        stat = self.insert_script(keys=keys, args=values)
+        return bool(stat)
 
     def _reset(self, count):
         if not self.reset_info.get('proportions'):
@@ -127,7 +128,8 @@ class AsyncSetFilter(SetFilter):
     async def insert_many(self, values):
         keys, values = self._get_keys_and_values(values)
         await self._reset(len(keys))
-        return await self.insert_script(keys=keys, args=values)
+        stat = await self.insert_script(keys=keys, args=values)
+        return bool(stat)
 
     async def exists(self, value):
         stats = await self.exists_many([value])
@@ -139,7 +141,7 @@ class AsyncSetFilter(SetFilter):
         return [bool(stat) for stat in stats]
 
     async def exists_and_insert(self, value):
-        stats = await self.insert_many([value])
+        stats = await self.exists_and_insert([value])
         return stats[0]
 
     async def exists_and_insert_many(self, values):

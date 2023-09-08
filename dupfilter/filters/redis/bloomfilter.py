@@ -25,8 +25,8 @@ for index, key in pairs(keys) do
     table.insert(result, exist)
 end
 return result
-
 """
+
 INSERT_SCRIPT = """
 local keys = KEYS
 local offsets = ARGV
@@ -36,6 +36,24 @@ for index, key in pairs(keys) do
     end
 end
 return true
+"""
+
+EXISTS_AND_INSERT_SCRIPT = """
+local keys = KEYS
+local offsets = ARGV
+local result = {}
+for index, key in pairs(keys) do
+    local exist = 1
+    for offset in string.gmatch(offsets[index], "[^,]+") do
+        local _exist = redis.call('GETBIT', key, offset)
+        if _exist == 0 then
+            exist = _exist
+            redis.call('SETBIT', key, offset, 1)
+        end
+    end
+    table.insert(result, exist)
+end
+return result
 """
 
 RESET_SCRIPT = """
@@ -88,6 +106,8 @@ class BloomFilter(RedisFilter):
         super(BloomFilter, self).__init__(server, *args, **kwargs)
         self.exists_script = self.server.register_script(EXISTS_SCRIPT)
         self.insert_script = self.server.register_script(INSERT_SCRIPT)
+        self.exists_insert_script = self.server.register_script(
+            EXISTS_AND_INSERT_SCRIPT)
         self.reset_script = self.server.register_script(RESET_SCRIPT)
         self.reset_info = cachetools.TTLCache(maxsize=2, ttl=reset_check_period)
         self.reset_info['proportions'] = {}
@@ -108,6 +128,15 @@ class BloomFilter(RedisFilter):
         self._reset(','.join(offsets))
         stat = self.insert_script(keys=keys, args=offsets)
         return bool(stat)
+
+    def exists_and_insert(self, value):
+        return self.exists_and_insert_many([value])[0]
+
+    def exists_and_insert_many(self, values):
+        keys, offsets = self._get_keys_and_offsets(values)
+        self._reset(','.join(offsets))
+        stats = self.exists_insert_script(keys=keys, args=offsets)
+        return [bool(stat) for stat in stats]
 
     @property
     def proportions(self):
@@ -170,6 +199,16 @@ class AsyncBloomFilter(BloomFilter):
         await self._reset(','.join(offsets))
         stat = await self.insert_script(keys=keys, args=offsets)
         return bool(stat)
+
+    async def exists_and_insert(self, value):
+        stats = await self.exists_and_insert_many([value])
+        return stats[0]
+
+    async def exists_and_insert_many(self, values):
+        keys, offsets = self._get_keys_and_offsets(values)
+        await self._reset(','.join(offsets))
+        stats = await self.exists_insert_script(keys=keys, args=offsets)
+        return [bool(stat) for stat in stats]
 
     async def _reset(self, current_offsets):
         if not self.reset_info.get('proportions'):
