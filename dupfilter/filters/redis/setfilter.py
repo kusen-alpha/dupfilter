@@ -95,6 +95,8 @@ class SetFilter(RedisFilter):
         return bool(stat)
 
     def _reset(self, count):
+        if not self.reset:
+            return
         if not self.cache.get('proportions'):
             proportions = self.proportions
             if not proportions:
@@ -166,6 +168,8 @@ class AsyncSetFilter(SetFilter):
         return [bool(stat) for stat in stats]
 
     async def _reset(self, count):
+        if not self.reset:
+            return
         proportions = self.cache.get('proportions')
         if not proportions:
             proportions = await self.proportions

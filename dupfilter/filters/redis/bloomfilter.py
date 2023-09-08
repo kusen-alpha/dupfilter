@@ -161,6 +161,8 @@ class BloomFilter(RedisFilter):
             return None, None
 
     def _reset(self, current_offsets):
+        if not self.reset:
+            return
         proportions = self.cache.get('proportions')
         if not proportions:
             proportions = self.proportions
@@ -226,6 +228,8 @@ class AsyncBloomFilter(BloomFilter):
         return [bool(stat) for stat in stats]
 
     async def _reset(self, current_offsets):
+        if not self.reset:
+            return
         if not self.cache.get('proportions'):
             proportions = await self.proportions
             if not proportions:
