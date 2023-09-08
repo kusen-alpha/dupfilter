@@ -151,6 +151,15 @@ class BloomFilter(RedisFilter):
         self._resetting = False
         return proportions
 
+    def _get_max_proportion(self):
+        try:
+            key, proportion = sorted(
+                list(self.cache['proportions'].items()),
+                key=lambda x: x[1])[-1]
+            return key, proportion
+        except KeyError:
+            return None, None
+
     def _reset(self, current_offsets):
         proportions = self.cache.get('proportions')
         if not proportions:
@@ -158,10 +167,8 @@ class BloomFilter(RedisFilter):
             if not proportions:
                 return
             self.cache['proportions'] = proportions
-        key, proportion = sorted(
-            list(self.cache['proportions'].items()),
-            key=lambda x: x[1])[-1]
-        if proportion < self.reset_proportion:
+        key, proportion = self._get_max_proportion()
+        if not proportion or (proportion < self.reset_proportion):
             return
         current_offsets = [int(offset) for offset in current_offsets.split(',')]
         offsets = self._get_reset_offsets(current_offsets)
@@ -224,10 +231,8 @@ class AsyncBloomFilter(BloomFilter):
             if not proportions:
                 return
             self.cache['proportions'] = proportions
-        key, proportion = sorted(
-            list(self.cache['proportions'].items()),
-            key=lambda x: x[1])[-1]
-        if proportion < self.reset_proportion:
+        key, proportion = self._get_max_proportion()
+        if not proportion or (proportion < self.reset_proportion):
             return
         current_offsets = [int(offset) for offset in current_offsets.split(',')]
         offsets = self._get_reset_offsets(current_offsets)

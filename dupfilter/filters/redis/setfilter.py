@@ -100,10 +100,8 @@ class SetFilter(RedisFilter):
             if not proportions:
                 return
             self.cache['proportions'] = proportions
-        key, proportion = sorted(
-            list(self.cache['proportions'].items()),
-            key=lambda x: x[1])[-1]
-        if proportion < self.reset_proportion:
+        key, proportion = self._get_max_proportion()
+        if not proportion or (proportion < self.reset_proportion):
             return
         self._reset_script(keys=[key], args=[count])
 
@@ -118,6 +116,15 @@ class SetFilter(RedisFilter):
             proportions[key] = self.server.scard(key) / self.maxsize
         self._resetting = False
         return proportions
+
+    def _get_max_proportion(self):
+        try:
+            key, proportion = sorted(
+                list(self.cache['proportions'].items()),
+                key=lambda x: x[1])[-1]
+            return key, proportion
+        except KeyError:
+            return None, None
 
     def _get_keys_and_values(self, values):
         values = [self._value_hash(value) for value in values]
@@ -165,10 +172,8 @@ class AsyncSetFilter(SetFilter):
             if not proportions:
                 return
             self.cache['proportions'] = proportions
-        key, proportion = sorted(
-            list(self.cache['proportions'].items()),
-            key=lambda x: x[1])[-1]
-        if proportion < self.reset_proportion:
+        key, proportion = self._get_max_proportion()
+        if not proportion or (proportion < self.reset_proportion):
             return
         await self._reset_script(keys=[key], args=[count])
 
@@ -181,5 +186,5 @@ class AsyncSetFilter(SetFilter):
         for block in range(self.block_num):
             key = self.key + str(block)
             proportions[key] = await self.server.scard(key) / self.maxsize
-        self._resetting =False
+        self._resetting = False
         return proportions
