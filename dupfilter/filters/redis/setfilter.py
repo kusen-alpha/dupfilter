@@ -76,11 +76,11 @@ class SetFilter(RedisFilter):
         return [bool(stat) for stat in stats]
 
     def exists_and_insert(self, value):
-        added = self.server.sadd(self._value_hash_and_compress(value))
-        return added == 0
+        return self.exists_and_insert_many([value])[0]
 
     def exists_and_insert_many(self, values):
         keys, values = self._get_keys_and_values(values)
+        self._reset(len(keys))
         stats = self.exists_and_insert_script(keys=keys, args=values)
         return [bool(stat) for stat in stats]
 
@@ -93,8 +93,7 @@ class SetFilter(RedisFilter):
         return self.insert_script(keys=keys, args=values)
 
     def _reset(self, count):
-        proportions = self.reset_info.get('proportions')
-        if not proportions:
+        if not self.reset_info.get('proportions'):
             self.reset_info['proportions'] = self.proportions
         key, proportion = sorted(
             list(self.reset_info['proportions'].items()),
@@ -145,6 +144,7 @@ class AsyncSetFilter(SetFilter):
 
     async def exists_and_insert_many(self, values):
         keys, values = self._get_keys_and_values(values)
+        await self._reset(len(keys))
         stats = await self.exists_and_insert_script(keys=keys, args=values)
         return [bool(stat) for stat in stats]
 

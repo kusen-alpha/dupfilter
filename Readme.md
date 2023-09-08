@@ -4,13 +4,48 @@
 
 # 去重方案
 
-|        去重方案        | 说明                       | 特点                     | 缺点                       |
-|:------------------:|--------------------------|------------------------|--------------------------|  
-|  RedisBloomFilter  | 基于redis Bitmap和布隆过滤器算法实现 | 占用内存小                  | 有误判的情况且不容易删除元素，若要删除可随机删除 |
-| RedisStringFilter  | 基于redis String数据结构实现     | 不会误判，能基于过期时间实现查询去重和确认机制 | 占用资源很大，需尽可能压缩和设置过期时间     |
-|   RedisSetFilter   | 基于redis Set数据结构实现        | 不会误判，占用内存相对较少          | 不易删除元素，若要删除可随机删除         |
-|     FileFiler      | 基于文件+内存集合类型实现            | 准确性高                   | 本地内存和存储占用大               |
-|    MemoryFilter    | 基于内存集合类型实现               | 准确性高                   | 不能持久化                    |
+<table style="text-align: center">
+    <tr>
+        <th>种类</th>
+        <th>去重方案</th>
+        <th>说明</th>
+        <th>特点</th>
+        <th>缺点</th>
+    </tr>
+    <tr >
+        <td >Memory</td>
+        <td>MemoryFilter</td>
+        <td>基于内存集合类型实现</td>
+        <td>准确性高</td>
+        <td>不能持久化 </td>
+    </tr>
+    <tr>
+        <td>File</td>
+        <td>FileFiler</td>
+        <td>基于文件+集合类型实现</td>
+        <td>准确性高</td>
+        <td>本地内存和存储占用大</td>
+    </tr>
+    <tr>
+        <td rowspan="3">Redis</td>
+        <td>RedisBloomFilter</td>
+        <td>基于Redis Bitmap和布隆过滤器算法实现</td>
+        <td>占用内存极小</td>
+        <td>有误判的情况且不容易删除元素，若要删除可随机删除</td>
+    </tr>
+    <tr>
+        <td>RedisStringFilter</td>
+        <td>基于Redis String数据结构实现</td>
+        <td>不会误判，能基于过期时间实现查询去重和确认机制</td>
+        <td>占用资源很大，需尽可能压缩和设置过期时间</td>
+    </tr>
+    <tr>
+        <td>RedisSetFilter</td>
+        <td>基于Redis Set数据结构实现</td>
+        <td>不会误判，占用内存相对较少</td>
+        <td>不易删除元素，若要删除可随机删除</td>
+    </tr>
+</table>
 
 # 项目特点
 
@@ -43,11 +78,11 @@ from dupfilter import AsyncRedisBloomFilter
 
 async def test():
     server = aioredis.from_url('redis://127.0.0.1:6379/0')
-    bf = AsyncRedisBloomFilter(server, key='bf')
-    stats = await bf.exists_many(["1", "2", "3"])
+    arbf = AsyncRedisBloomFilter(server, key='bf')
+    stats = await arbf.exists_many(["1", "2", "3"])
     print(stats)
-    await bf.insert_many(["1", "2", "3"])
-    stats = await bf.exists_many(["1", "2", "3"])
+    await arbf.insert_many(["1", "2", "3"])
+    stats = await arbf.exists_many(["1", "2", "3"])
     print(stats)
 
 

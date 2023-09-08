@@ -42,20 +42,20 @@ class StringFilter(RedisFilter):
         self.exists_script = self.server.register_script(EXISTS_SCRIPT)
         self.insert_script = self.server.register_script(INSERT_SCRIPT)
 
-    def insert(self, value, expire=2592000):
-        return self.insert_many([value], expire)[0]
-
-    def insert_many(self, values, expire=2592000):
-        keys = [self._value_hash_and_compress(value) for value in values]
-        stats = self.insert_script(keys=keys, args=[expire])
-        return [bool(stat) for stat in stats]
-
     def exists(self, value, expire=7200):
         return self.exists_many([value], expire)[0]
 
     def exists_many(self, values, expire=7200):
         keys = [self._value_hash_and_compress(value) for value in values]
         stats = self.exists_script(keys=keys, args=[expire])
+        return [bool(stat) for stat in stats]
+
+    def insert(self, value, expire=2592000):
+        return self.insert_many([value], expire)[0]
+
+    def insert_many(self, values, expire=2592000):
+        keys = [self._value_hash_and_compress(value) for value in values]
+        stats = self.insert_script(keys=keys, args=[expire])
         return [bool(stat) for stat in stats]
 
     exists_and_lock = exists

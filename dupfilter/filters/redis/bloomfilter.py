@@ -172,8 +172,7 @@ class AsyncBloomFilter(BloomFilter):
         return bool(stat)
 
     async def _reset(self, current_offsets):
-        proportions = self.reset_info.get('proportions')
-        if not proportions:
+        if not self.reset_info.get('proportions'):
             self.reset_info['proportions'] = await self.proportions
         key, proportion = sorted(
             list(self.reset_info['proportions'].items()),
