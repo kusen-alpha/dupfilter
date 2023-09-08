@@ -28,19 +28,19 @@
     </tr>
     <tr>
         <td rowspan="3">Redis</td>
-        <td>RedisBloomFilter/AsyncRedisBloomFilter</td>
+        <td>RedisBloomFilter<br>AsyncRedisBloomFilter</td>
         <td>基于Redis Bitmap和布隆过滤器算法实现</td>
         <td>占用内存极小</td>
         <td>有误判的情况且不容易删除元素，若要删除可随机删除</td>
     </tr>
     <tr>
-        <td>RedisStringFilter/AsyncRedisStringFilter</td>
+        <td>RedisStringFilter<br>AsyncRedisStringFilter</td>
         <td>基于Redis String数据结构实现</td>
         <td>不会误判，能基于过期时间实现查询去重和确认机制</td>
         <td>占用资源很大，需尽可能压缩和设置过期时间</td>
     </tr>
     <tr>
-        <td>RedisSetFilter/AsyncRedisSetFilter</td>
+        <td>RedisSetFilter<br>AsyncRedisSetFilter</td>
         <td>基于Redis Set数据结构实现</td>
         <td>不会误判，占用内存相对较少</td>
         <td>不易删除元素，若要删除可随机删除</td>
