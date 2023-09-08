@@ -104,20 +104,21 @@ class BloomFilter(RedisFilter):
         self.reset = reset
         self.reset_proportion = reset_proportion
         super(BloomFilter, self).__init__(server, *args, **kwargs)
-        self.exists_script = self.server.register_script(EXISTS_SCRIPT)
-        self.insert_script = self.server.register_script(INSERT_SCRIPT)
-        self.exists_insert_script = self.server.register_script(
+        self._exists_script = self.server.register_script(EXISTS_SCRIPT)
+        self._insert_script = self.server.register_script(INSERT_SCRIPT)
+        self._exists_insert_script = self.server.register_script(
             EXISTS_AND_INSERT_SCRIPT)
-        self.reset_script = self.server.register_script(RESET_SCRIPT)
-        self.reset_info = cachetools.TTLCache(maxsize=2, ttl=reset_check_period)
-        self.reset_info['proportions'] = {}
+        self._reset_script = self.server.register_script(RESET_SCRIPT)
+        self.cache = cachetools.TTLCache(maxsize=1, ttl=reset_check_period)
+        self.cache['proportions'] = {}
+        self._resetting = False
 
     def exists(self, value):
         return self.exists_many([value])[0]
 
     def exists_many(self, values):
         keys, offsets = self._get_keys_and_offsets(values)
-        stats = self.exists_script(keys=keys, args=offsets)
+        stats = self._exists_script(keys=keys, args=offsets)
         return [bool(stat) for stat in stats]
 
     def insert(self, value):
@@ -126,7 +127,7 @@ class BloomFilter(RedisFilter):
     def insert_many(self, values):
         keys, offsets = self._get_keys_and_offsets(values)
         self._reset(','.join(offsets))
-        stat = self.insert_script(keys=keys, args=offsets)
+        stat = self._insert_script(keys=keys, args=offsets)
         return bool(stat)
 
     def exists_and_insert(self, value):
@@ -135,29 +136,36 @@ class BloomFilter(RedisFilter):
     def exists_and_insert_many(self, values):
         keys, offsets = self._get_keys_and_offsets(values)
         self._reset(','.join(offsets))
-        stats = self.exists_insert_script(keys=keys, args=offsets)
+        stats = self._exists_insert_script(keys=keys, args=offsets)
         return [bool(stat) for stat in stats]
 
     @property
     def proportions(self):
         proportions = {}
+        if self._resetting:
+            return {}
+        self._resetting = True
         for block in range(self.block_num):
             key = self.key + str(block)
             proportions[key] = self.server.bitcount(key) / self.bit
+        self._resetting = False
         return proportions
 
     def _reset(self, current_offsets):
-        proportions = self.reset_info.get('proportions')
+        proportions = self.cache.get('proportions')
         if not proportions:
-            self.reset_info['proportions'] = self.proportions
+            proportions = self.proportions
+            if not proportions:
+                return
+            self.cache['proportions'] = proportions
         key, proportion = sorted(
-            list(self.reset_info['proportions'].items()),
+            list(self.cache['proportions'].items()),
             key=lambda x: x[1])[-1]
         if proportion < self.reset_proportion:
             return
         current_offsets = [int(offset) for offset in current_offsets.split(',')]
         offsets = self._get_reset_offsets(current_offsets)
-        self.reset_script(keys=[key], args=offsets)
+        self._reset_script(keys=[key], args=offsets)
 
     def _get_keys_and_offsets(self, values):
         values = [self._value_hash(value) for value in values]
@@ -188,7 +196,7 @@ class AsyncBloomFilter(BloomFilter):
 
     async def exists_many(self, values):
         keys, offsets = self._get_keys_and_offsets(values)
-        stats = await self.exists_script(keys=keys, args=offsets)
+        stats = await self._exists_script(keys=keys, args=offsets)
         return [bool(stat) for stat in stats]
 
     async def insert(self, value):
@@ -197,7 +205,7 @@ class AsyncBloomFilter(BloomFilter):
     async def insert_many(self, values):
         keys, offsets = self._get_keys_and_offsets(values)
         await self._reset(','.join(offsets))
-        stat = await self.insert_script(keys=keys, args=offsets)
+        stat = await self._insert_script(keys=keys, args=offsets)
         return bool(stat)
 
     async def exists_and_insert(self, value):
@@ -207,27 +215,34 @@ class AsyncBloomFilter(BloomFilter):
     async def exists_and_insert_many(self, values):
         keys, offsets = self._get_keys_and_offsets(values)
         await self._reset(','.join(offsets))
-        stats = await self.exists_insert_script(keys=keys, args=offsets)
+        stats = await self._exists_insert_script(keys=keys, args=offsets)
         return [bool(stat) for stat in stats]
 
     async def _reset(self, current_offsets):
-        if not self.reset_info.get('proportions'):
-            self.reset_info['proportions'] = await self.proportions
+        if not self.cache.get('proportions'):
+            proportions = await self.proportions
+            if not proportions:
+                return
+            self.cache['proportions'] = proportions
         key, proportion = sorted(
-            list(self.reset_info['proportions'].items()),
+            list(self.cache['proportions'].items()),
             key=lambda x: x[1])[-1]
         if proportion < self.reset_proportion:
             return
         current_offsets = [int(offset) for offset in current_offsets.split(',')]
         offsets = self._get_reset_offsets(current_offsets)
-        await self.reset_script(keys=[key], args=offsets)
+        await self._reset_script(keys=[key], args=offsets)
 
     @property
     async def proportions(self):
         proportions = {}
+        if self._resetting:
+            return proportions
+        self._resetting = True
         for block in range(self.block_num):
             key = self.key + str(block)
             proportions[key] = await self.server.bitcount(key) / self.bit
+        self._resetting = False
         return proportions
 
 
