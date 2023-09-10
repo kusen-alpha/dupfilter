@@ -1,7 +1,7 @@
 # -*- coding:utf-8 -*-
 # author: kusen
 # email: 1194542196@qq.com
-# date: 2023/9/6
+# date: 2023/9/10
 
 import sys
 
@@ -14,7 +14,7 @@ local keys = KEYS
 local values = ARGV
 local result = {}
 for index, key in pairs(keys) do
-    local exist = redis.call('SISMEMBER', key, values[index])
+    local exist = redis.call('ZSCORE', key, values[index])
     table.insert(result, exist)
 end
 return result
@@ -23,7 +23,8 @@ INSERT_SCRIPT = """
 local keys = KEYS
 local values = ARGV
 for index, key in pairs(keys) do
-    redis.call('SADD', key, values[index])
+    local ts = redis.call("TIME")[1]
+    redis.call('ZADD', key, 'NX', ts, values[index])
 end
 return true
 """
@@ -32,7 +33,8 @@ local keys = KEYS
 local values = ARGV
 local result = {}
 for index, key in pairs(keys) do
-    local exist = redis.call('SADD', key, values[index])
+    local ts = redis.call("TIME")[1]
+    local exist = redis.call('ZADD', key, 'NX', ts, values[index])
     if exist==0 then
         table.insert(result, 1)
     else
@@ -43,15 +45,17 @@ return result
 """
 RESET_SCRIPT = """
 local key = KEYS[1]
-local count = ARGV[1]
-redis.call('SPOP', key, count)
+local expire = ARGV[1]
+local ts = redis.call("TIME")[1]
+redis.call('ZREMRANGEBYSCORE', key, 0, ts-expire)
 return true
 """
 
 
-class SetFilter(RedisFilter):
+class SortedSetFilter(RedisFilter):
     def __init__(self, server, key, block_num=1, maxsize=sys.maxsize,
                  reset=False, reset_proportion=0.8, reset_check_period=7200,
+                 reset_expire=2592000,
                  *args, **kwargs):
         self.key = key
         self.block_num = block_num
@@ -59,7 +63,8 @@ class SetFilter(RedisFilter):
         self.reset = reset
         self.reset_proportion = reset_proportion
         self.reset_check_period = reset_check_period
-        super(SetFilter, self).__init__(server, *args, **kwargs)
+        self.reset_expire = reset_expire
+        super(SortedSetFilter, self).__init__(server, *args, **kwargs)
         self._exists_script = self.server.register_script(EXISTS_SCRIPT)
         self._insert_script = self.server.register_script(INSERT_SCRIPT)
         self._exists_and_insert_script = self.server.register_script(
@@ -116,7 +121,7 @@ class SetFilter(RedisFilter):
         self._resetting = True
         for block in range(self.block_num):
             key = self.key + str(block)
-            proportions[key] = self.server.scard(key) / self.maxsize
+            proportions[key] = self.server.zcard(key) / self.maxsize
         self._resetting = False
         return proportions
 
@@ -139,7 +144,7 @@ class SetFilter(RedisFilter):
         return str(int(value[0:2], 16) % self.block_num)
 
 
-class AsyncSetFilter(SetFilter):
+class AsyncSortedSetFilter(SortedSetFilter):
     async def insert(self, value):
         return await self.insert_many([value])
 
@@ -190,6 +195,6 @@ class AsyncSetFilter(SetFilter):
         self._resetting = True
         for block in range(self.block_num):
             key = self.key + str(block)
-            proportions[key] = await self.server.scard(key) / self.maxsize
+            proportions[key] = await self.server.zcard(key) / self.maxsize
         self._resetting = False
         return proportions

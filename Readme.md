@@ -11,6 +11,7 @@
         <th>说明</th>
         <th>特点</th>
         <th>缺点</th>
+        <th>置出方案</th>
     </tr>
     <tr >
         <td >Memory</td>
@@ -18,6 +19,7 @@
         <td>基于内存集合类型实现</td>
         <td>准确性高</td>
         <td>不能持久化 </td>
+        <td>随机删除 </td>
     </tr>
     <tr>
         <td>File</td>
@@ -25,25 +27,36 @@
         <td>基于文件+集合类型实现</td>
         <td>准确性高</td>
         <td>本地内存和存储占用大</td>
+        <td>利用文件指针区间删除</td>
     </tr>
     <tr>
-        <td rowspan="3">Redis</td>
+        <td rowspan="4">Redis</td>
         <td>RedisBloomFilter<br>AsyncRedisBloomFilter</td>
         <td>基于Redis Bitmap和布隆过滤器算法实现</td>
         <td>占用内存极小</td>
-        <td>有误判的情况且不容易删除元素，若要删除可随机删除</td>
+        <td>有误判的情况且不容易删除元素</td>
+        <td>随机删除</td>
     </tr>
     <tr>
         <td>RedisStringFilter<br>AsyncRedisStringFilter</td>
         <td>基于Redis String数据结构实现</td>
         <td>不会误判，能基于过期时间实现查询去重和确认机制</td>
         <td>占用资源很大，需尽可能压缩和设置过期时间</td>
+        <td>设置过期时间</td>
     </tr>
     <tr>
         <td>RedisSetFilter<br>AsyncRedisSetFilter</td>
         <td>基于Redis Set数据结构实现</td>
-        <td>不会误判，占用内存相对较少</td>
-        <td>不易删除元素，若要删除可随机删除</td>
+        <td>准确性高</td>
+        <td>占用资源较大</td>
+        <td>随机删除</td>
+    </tr>
+    <tr>
+        <td>RedisSortedSetFilter<br>AsyncRedisSortedSetFilter</td>
+        <td>基于Redis SortedSet数据结构实现</td>
+        <td>准确性高</td>
+        <td>占用资源较大</td>
+        <td>根据分值删除</td>
     </tr>
 </table>
 
