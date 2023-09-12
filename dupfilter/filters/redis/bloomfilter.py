@@ -8,7 +8,7 @@ import random
 import cachetools
 
 from dupfilter import utils
-from dupfilter.filters.redis import RedisFilter
+from dupfilter.filters.redis import RedisResetFilter
 
 EXISTS_SCRIPT = """
 local keys = KEYS
@@ -78,9 +78,8 @@ class SimpleHash(object):
         return self.bit & ret
 
 
-class BloomFilter(RedisFilter):
+class BloomFilter(RedisResetFilter):
     def __init__(self, server, key, bit=32, hash_num=6, block_num=1,
-                 reset=False, reset_proportion=0.8, reset_check_period=7200,
                  *args, **kwargs):
         """
 
@@ -101,17 +100,14 @@ class BloomFilter(RedisFilter):
         self.seeds = range(1, hash_num + 1)
         self.shs = [SimpleHash(self.bit, seed) for seed in self.seeds]
         self.block_num = block_num
-        self.reset = reset
-        self.reset_proportion = reset_proportion
         super(BloomFilter, self).__init__(server, *args, **kwargs)
         self._exists_script = self.server.register_script(EXISTS_SCRIPT)
         self._insert_script = self.server.register_script(INSERT_SCRIPT)
         self._exists_insert_script = self.server.register_script(
             EXISTS_AND_INSERT_SCRIPT)
         self._reset_script = self.server.register_script(RESET_SCRIPT)
-        self.cache = cachetools.TTLCache(maxsize=1, ttl=reset_check_period)
+        self.cache = cachetools.TTLCache(maxsize=1, ttl=self.reset_check_period)
         self.cache['proportions'] = {}
-        self._resetting = False
 
     def exists(self, value):
         return self.exists_many([value])[0]

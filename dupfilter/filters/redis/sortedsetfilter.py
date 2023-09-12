@@ -7,7 +7,7 @@ import sys
 
 import cachetools
 
-from dupfilter.filters.redis import RedisFilter
+from dupfilter.filters.redis import RedisResetFilter
 
 EXISTS_SCRIPT = """
 local keys = KEYS
@@ -52,17 +52,13 @@ return true
 """
 
 
-class SortedSetFilter(RedisFilter):
+class SortedSetFilter(RedisResetFilter):
     def __init__(self, server, key, block_num=1, maxsize=sys.maxsize,
-                 reset=False, reset_proportion=0.8, reset_check_period=7200,
                  reset_expire=2592000,
                  *args, **kwargs):
         self.key = key
         self.block_num = block_num
         self.maxsize = maxsize
-        self.reset = reset
-        self.reset_proportion = reset_proportion
-        self.reset_check_period = reset_check_period
         self.reset_expire = reset_expire
         super(SortedSetFilter, self).__init__(server, *args, **kwargs)
         self._exists_script = self.server.register_script(EXISTS_SCRIPT)
@@ -70,7 +66,7 @@ class SortedSetFilter(RedisFilter):
         self._exists_and_insert_script = self.server.register_script(
             EXISTS_AND_INSERT_SCRIPT)
         self._reset_script = self.server.register_script(RESET_SCRIPT)
-        self.cache = cachetools.TTLCache(maxsize=1, ttl=reset_check_period)
+        self.cache = cachetools.TTLCache(maxsize=1, ttl=self.reset_check_period)
         self.cache['proportions'] = {}
         self._resetting = False
 
