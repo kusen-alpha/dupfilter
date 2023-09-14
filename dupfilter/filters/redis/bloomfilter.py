@@ -118,13 +118,13 @@ class BloomFilter(RedisResetFilter):
         return [bool(stat) for stat in stats]
 
     def insert(self, value):
-        return self.insert_many([value])
+        return self.insert_many([value])[0]
 
     def insert_many(self, values):
         keys, offsets = self._get_keys_and_offsets(values)
         self._reset(','.join(offsets))
         stat = self._insert_script(keys=keys, args=offsets)
-        return bool(stat)
+        return [bool(stat) for _ in range(len(values))]
 
     def exists_and_insert(self, value):
         return self.exists_and_insert_many([value])[0]
@@ -205,13 +205,14 @@ class AsyncBloomFilter(BloomFilter):
         return [bool(stat) for stat in stats]
 
     async def insert(self, value):
-        return await self.insert_many([value])
+        stats = await self.insert_many([value])
+        return stats[0]
 
     async def insert_many(self, values):
         keys, offsets = self._get_keys_and_offsets(values)
         await self._reset(','.join(offsets))
         stat = await self._insert_script(keys=keys, args=offsets)
-        return bool(stat)
+        return [bool(stat) for _ in range(len(values))]
 
     async def exists_and_insert(self, value):
         stats = await self.exists_and_insert_many([value])

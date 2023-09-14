@@ -88,13 +88,13 @@ class SortedSetFilter(RedisResetFilter):
         return [bool(stat) for stat in stats]
 
     def insert(self, value):
-        return self.insert_many([value])
+        return self.insert_many([value])[0]
 
     def insert_many(self, values):
         keys, values = self._get_keys_and_values(values)
         self._reset(len(keys))
         stat = self._insert_script(keys=keys, args=values)
-        return bool(stat)
+        return [bool(stat) for _ in range(len(values))]
 
     def _reset(self, count):
         if not self.reset:
@@ -142,13 +142,14 @@ class SortedSetFilter(RedisResetFilter):
 
 class AsyncSortedSetFilter(SortedSetFilter):
     async def insert(self, value):
-        return await self.insert_many([value])
+        stats = await self.insert_many([value])
+        return stats[0]
 
     async def insert_many(self, values):
         keys, values = self._get_keys_and_values(values)
         await self._reset(len(keys))
         stat = await self._insert_script(keys=keys, args=values)
-        return bool(stat)
+        return [bool(stat) for _ in range(len(values))]
 
     async def exists(self, value):
         stats = await self.exists_many([value])

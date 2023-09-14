@@ -44,8 +44,7 @@ class MemoryFilter(ResetFilter):
         return True
 
     def insert_many(self, values):
-        _ = [self.insert(value) for value in values]
-        return True
+        return [self.insert(value) for value in values]
 
     def exists_and_insert(self, value):
         value = self._value_hash_and_compress(value)
