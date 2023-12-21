@@ -58,6 +58,14 @@
         <td>占用资源较大</td>
         <td>根据分值删除</td>
     </tr>
+    <tr >
+        <td >SQL</td>
+        <td>SQLFilter</td>
+        <td>基于SQL关系数据库表主键来实现</td>
+        <td>准确性高</td>
+        <td>在大规模去重场景性能差 </td>
+        <td>按时间删除 </td>
+    </tr>
 </table>
 
 # 项目特点

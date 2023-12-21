@@ -13,3 +13,4 @@ from dupfilter.filters.redis.setfilter import SetFilter as RedisSetFilter
 from dupfilter.filters.redis.setfilter import AsyncSetFilter as AsyncRedisSetFilter
 from dupfilter.filters.redis.sortedsetfilter import SortedSetFilter as RedisSortedSetFilter
 from dupfilter.filters.redis.sortedsetfilter import AsyncSortedSetFilter as AsyncRedisSortedSetFilter
+from dupfilter.filters.sql import SQLFilter
