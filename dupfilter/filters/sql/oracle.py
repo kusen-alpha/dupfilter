@@ -2,28 +2,13 @@
 # author: kusen
 # email: 1194542196@qq.com
 # date: 2024/3/12
-import time
 
+
+import time
 from dupfilter.filters.sql import SQLFilter
 
 
 class OracleSQLFilter(SQLFilter):
-    # def _create_table_sql(self):
-    #     if not self.record_time:
-    #         sql = """ CREATE TABLE %s (
-    #             id VARCHAR(32) NOT NULL,
-    #             PRIMARY KEY (id)
-    #         )
-    #         """ % self.table
-    #     else:
-    #         sql = """
-    #         CREATE TABLE %s (
-    #             id VARCHAR(32) NOT NULL,
-    #             insert_time INT,
-    #             PRIMARY KEY (id)
-    #         )
-    #             """ % self.table
-    #     return sql
 
     def _insert_sql(self, values):
         values = [self._value_hash_and_compress(value) for value in values]

@@ -14,4 +14,6 @@ from dupfilter.filters.redis.setfilter import AsyncRedisSetFilter
 from dupfilter.filters.redis.sortedsetfilter import RedisSortedSetFilter
 from dupfilter.filters.redis.sortedsetfilter import AsyncRedisSortedSetFilter
 from dupfilter.filters.sql import SQLFilter
+from dupfilter.filters.sql.mysql import MySQLFilter
 from dupfilter.filters.sql.mysql import AsyncMySQLFilter
+from dupfilter.filters.sql.oracle import OracleSQLFilter

@@ -3,9 +3,9 @@
 # email: 1194542196@qq.com
 # date: 2023/12/8
 
-import time
 
-from dupfilter.filters import Filter, ResetFilter
+import time
+from dupfilter.filters import Filter
 
 
 class SQLFilter(Filter):
@@ -97,3 +97,16 @@ class SQLFilter(Filter):
         values = [value for stat, value in zip(stats, values) if not stat]
         self.insert_many(values)
         return stats
+
+
+if __name__ == '__main__':
+    import pymysql
+
+    conn = pymysql.connect(host='192.168.1.10', user='root', password='123456',
+                           database='test')
+    cursor = conn.cursor()
+
+    f = SQLFilter(conn, cursor, 'dup', record_time=False)
+    r = f.exists_and_insert_many(['1', '2', '5'])
+    # r = f.insert_many(['1', '2', '6'])
+    print(r)

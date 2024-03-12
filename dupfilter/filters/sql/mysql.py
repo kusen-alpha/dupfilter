@@ -3,8 +3,13 @@
 # email: 1194542196@qq.com
 # date: 2024/3/12
 
+
 from dupfilter.filters import Filter
 from dupfilter.filters.sql import SQLFilter
+
+
+class MySQLFilter(SQLFilter):
+    pass
 
 
 class AsyncMySQLFilter(SQLFilter, Filter):
@@ -19,8 +24,11 @@ class AsyncMySQLFilter(SQLFilter, Filter):
         sql = self._create_table_sql()
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cur:
-                await cur.execute(sql)
-                await conn.commit()
+                try:
+                    await cur.execute(sql)
+                    await conn.commit()
+                except Exception as e:
+                    return
 
     async def exists(self, value):
         result = await self.exists_many([value])
@@ -59,17 +67,6 @@ class AsyncMySQLFilter(SQLFilter, Filter):
 
 
 if __name__ == '__main__':
-    import pymysql
-
-    # conn = pymysql.connect(host='192.168.1.10', user='root', password='123456',
-    #                        database='test')
-    # cursor = conn.cursor()
-    #
-    # f = SQLFilter(conn, cursor, 'dup', record_time=False)
-    # r = f.exists_and_insert_many(['1', '2', '5'])
-    # # r = f.insert_many(['1', '2', '6'])
-    # print(r)
-
     import aiomysql
     import asyncio
 
@@ -85,7 +82,7 @@ if __name__ == '__main__':
             'db': 'test'
         }
         pool = await aiomysql.create_pool(**configs)
-        f = AsyncSQLFilter(pool=pool, table="dup", record_time=True)
+        f = AsyncMySQLFilter(pool=pool, table="dup", record_time=True)
         await f.create_table()
         res = await f.exists_and_insert_many(['1', '2', '3'])
         print(res)
