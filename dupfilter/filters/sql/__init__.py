@@ -31,18 +31,18 @@ class SQLFilter(Filter):
     def _create_table_sql(self):
         if not self.record_time:
             sql = """  
-            CREATE TABLE IF NOT EXISTS `%s` (  
-                `id` VARCHAR(32) NOT NULL,
-                PRIMARY KEY (`id`)  
-            );  
+            CREATE TABLE %s (  
+                id VARCHAR(32) NOT NULL,
+                PRIMARY KEY (id)  
+            )
             """ % self.table
         else:
             sql = """  
-            CREATE TABLE IF NOT EXISTS `%s` (  
-                `id` VARCHAR(32) NOT NULL,  
-                `insert_time` VARCHAR(13),
-                PRIMARY KEY (`id`)  
-            );  
+            CREATE TABLE %s (  
+                id VARCHAR(32) NOT NULL,  
+                insert_time INT ,
+                PRIMARY KEY (id)  
+            )
                 """ % self.table
         return sql
 
@@ -97,6 +97,3 @@ class SQLFilter(Filter):
         values = [value for stat, value in zip(stats, values) if not stat]
         self.insert_many(values)
         return stats
-
-
-
