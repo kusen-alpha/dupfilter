@@ -5,7 +5,9 @@
 
 
 import time
+from dupfilter.filters import Filter
 from dupfilter.filters.sql import SQLFilter
+from dupfilter.filters.sql.mysql import AsyncMySQLFilter
 
 
 class OracleSQLFilter(SQLFilter):
@@ -21,3 +23,10 @@ class OracleSQLFilter(SQLFilter):
             sql = f"""INSERT /*+ IGNORE_ROW_ON_DUPKEY_INDEX(
             {self.table} INTO {self.table} (id) VALUES (:1)"""
         return sql, values
+
+
+class AsyncOracleSQLFilter(OracleSQLFilter, AsyncMySQLFilter):
+    def __init__(self, *args, **kwargs):
+        AsyncMySQLFilter.__init__(*args, **kwargs)
+
+
