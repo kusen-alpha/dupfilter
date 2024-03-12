@@ -26,28 +26,65 @@ class SQLFilter(Filter):
         self.connection = connection
         self.record_time = record_time
         super(SQLFilter, self).__init__(*args, **kwargs)
+        self._create_table()
+
+    def _create_table_sql(self):
+        if not self.record_time:
+            sql = """  
+            CREATE TABLE IF NOT EXISTS `%s` (  
+                `id` VARCHAR(32) NOT NULL,
+                PRIMARY KEY (`id`)  
+            );  
+            """ % self.table
+        else:
+            sql = """  
+            CREATE TABLE IF NOT EXISTS `%s` (  
+                `id` VARCHAR(32) NOT NULL,  
+                `insert_time` VARCHAR(13),
+                PRIMARY KEY (`id`)  
+            );  
+                """ % self.table
+        return sql
+
+    def _create_table(self):
+        sql = self._create_table_sql()
+        try:
+            self.cursor.execute(sql)
+            self.connection.commit()
+        except Exception as e:
+            pass
 
     def exists(self, value):
         return self.exists_many([value])[0]
 
-    def exists_many(self, values):
+    def _exists_sql(self, values):
         values = [self._value_hash_and_compress(value) for value in values]
-        s_values = str(tuple(values)) if len(values) > 1 else f"('{values[0]}')"
+        s_values = str(tuple(values)) if len(
+            values) > 1 else f"('{values[0]}')"
         sql = f"select id from {self.table} where id in {s_values}"
+        return sql, values
+
+    def exists_many(self, values):
+        sql, values = self._exists_sql(values)
         self.cursor.execute(sql)
-        result = [res[0] for res in cursor.fetchall()]
+        result = [res[0] for res in self.cursor.fetchall()]
         return [value in result for value in values]
 
     def insert(self, value):
         return self.insert_many([value])[0]
 
-    def insert_many(self, values):
+    def _insert_sql(self, values):
         values = [self._value_hash_and_compress(value) for value in values]
         if self.record_time:
-            sql = f"INSERT IGNORE INTO {self.table} (id, insert_time) VALUES (%s, %s)"
+            sql = f"""INSERT IGNORE INTO {self.table}
+                     (id, insert_time) VALUES (%s, %s)"""
             values = [(value, int(time.time())) for value in values]
         else:
             sql = f"INSERT IGNORE INTO {self.table} (id) VALUES (%s)"
+        return sql, values
+
+    def insert_many(self, values):
+        sql, values = self._insert_sql(values)
         self.cursor.executemany(sql, values)
         self.connection.commit()
         return [True for _ in values]
@@ -57,23 +94,9 @@ class SQLFilter(Filter):
 
     def exists_and_insert_many(self, values):
         stats = self.exists_many(values)
+        values = [value for stat, value in zip(stats, values) if not stat]
         self.insert_many(values)
         return stats
 
 
-# class SQLResetFilter(ResetFilter):
-#     def __init__(self, cursor, *args, **kwargs):
-#         self.cursor = cursor
-#         super(SQLResetFilter, self).__init__(*args, **kwargs)
-#
 
-if __name__ == '__main__':
-    import pymysql
-
-    conn = pymysql.connect(host='192.168.1.10', user='root', password='123456',
-                           database='test')
-    cursor = conn.cursor()
-
-    f = SQLFilter(conn, cursor, 'dup', record_time=False)
-    r = f.exists_and_insert_many(['1', '2'])
-    print(r)

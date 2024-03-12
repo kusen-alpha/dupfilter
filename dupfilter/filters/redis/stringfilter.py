@@ -36,9 +36,9 @@ return result
 """
 
 
-class StringFilter(RedisFilter):
+class RedisStringFilter(RedisFilter):
     def __init__(self, server, *args, **kwargs):
-        super(StringFilter, self).__init__(server, *args, **kwargs)
+        super(RedisStringFilter, self).__init__(server, *args, **kwargs)
         self.exists_script = self.server.register_script(EXISTS_SCRIPT)
         self.insert_script = self.server.register_script(INSERT_SCRIPT)
 
@@ -64,7 +64,7 @@ class StringFilter(RedisFilter):
     confirm_many = insert_many
 
 
-class AsyncStringFilter(StringFilter):
+class AsyncRedisStringFilter(RedisStringFilter):
     async def insert(self, value, expire=2592000):
         stats = await self.insert_many([value], expire)
         return stats[0]

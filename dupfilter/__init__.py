@@ -5,12 +5,13 @@
 
 from dupfilter.filters.file import FileFilter
 from dupfilter.filters.memory import MemoryFilter
-from dupfilter.filters.redis.bloomfilter import BloomFilter as RedisBloomFilter
-from dupfilter.filters.redis.bloomfilter import AsyncBloomFilter as AsyncRedisBloomFilter
-from dupfilter.filters.redis.stringfilter import StringFilter as RedisStringFilter
-from dupfilter.filters.redis.stringfilter import AsyncStringFilter as AsyncRedisStringFilter
-from dupfilter.filters.redis.setfilter import SetFilter as RedisSetFilter
-from dupfilter.filters.redis.setfilter import AsyncSetFilter as AsyncRedisSetFilter
-from dupfilter.filters.redis.sortedsetfilter import SortedSetFilter as RedisSortedSetFilter
-from dupfilter.filters.redis.sortedsetfilter import AsyncSortedSetFilter as AsyncRedisSortedSetFilter
+from dupfilter.filters.redis.bloomfilter import RedisBloomFilter
+from dupfilter.filters.redis.bloomfilter import AsyncRedisBloomFilter
+from dupfilter.filters.redis.stringfilter import RedisStringFilter
+from dupfilter.filters.redis.stringfilter import AsyncRedisStringFilter
+from dupfilter.filters.redis.setfilter import RedisSetFilter
+from dupfilter.filters.redis.setfilter import AsyncRedisSetFilter
+from dupfilter.filters.redis.sortedsetfilter import RedisSortedSetFilter
+from dupfilter.filters.redis.sortedsetfilter import AsyncRedisSortedSetFilter
 from dupfilter.filters.sql import SQLFilter
+from dupfilter.filters.sql.mysql import AsyncMySQLFilter

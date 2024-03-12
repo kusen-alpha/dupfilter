@@ -2,14 +2,29 @@
 # author: kusen
 # email: 1194542196@qq.com
 # date: 2023/9/6
+
+
 from dupfilter import utils
 
 
+class Reset(object):
+    def __init__(self, max_rate=0.8, reset_rate=0.5):
+        self.max_rate = max_rate
+        self.reset_rate = reset_rate
+        self.resetting = False
+
+    def used(self):
+        pass
+
+    def reset(self):
+        pass
+
+
 class Filter(object):
-    def __init__(self,
-                 value_hash_func=utils.md5,
-                 value_compress_func=None,
-                 ):
+    def __init__(
+            self,
+            value_hash_func=utils.md5,
+            value_compress_func=None, ):
         self.value_hash_func = value_hash_func
         self.value_compress_func = value_compress_func or (lambda value: value)
 
