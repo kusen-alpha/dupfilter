@@ -17,3 +17,5 @@ from dupfilter.filters.sql import SQLFilter
 from dupfilter.filters.sql.mysql import MySQLFilter
 from dupfilter.filters.sql.mysql import AsyncMySQLFilter
 from dupfilter.filters.sql.oracle import OracleSQLFilter
+from dupfilter.filters.sql.oracle import AsyncOracleSQLFilter
+from dupfilter.filters.sql.sqlite import SQLiteFilter
