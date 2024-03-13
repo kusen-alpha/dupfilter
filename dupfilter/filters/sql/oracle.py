@@ -27,6 +27,6 @@ class OracleSQLFilter(SQLFilter):
 
 class AsyncOracleSQLFilter(OracleSQLFilter, AsyncMySQLFilter):
     def __init__(self, *args, **kwargs):
-        AsyncMySQLFilter.__init__(*args, **kwargs)
+        AsyncMySQLFilter.__init__(self, *args, **kwargs)
 
 

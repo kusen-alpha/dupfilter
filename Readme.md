@@ -112,6 +112,12 @@ loop.run_until_complete(test())
 
 ```
 
+# 相关库
+1. redis：redis/aioredis
+2. mysql：pymysql/aiomysql
+3. sqlite：sqlite3
+4. oracle：cx_Oracle/cx_Oracle_async
+
 ## Others
 
 和上述示例类似
