@@ -5,7 +5,7 @@
 
 
 import time
-from dupfilter.filters import Filter
+from dupfilter.filters import Filter, decorate_warning
 
 
 class SQLFilter(Filter):
@@ -54,6 +54,7 @@ class SQLFilter(Filter):
         except Exception as e:
             pass
 
+    @decorate_warning
     def exists(self, value):
         return self.exists_many([value])[0]
 
@@ -64,12 +65,14 @@ class SQLFilter(Filter):
         sql = f"select id from {self.table} where id in {s_values}"
         return sql, values
 
+    @decorate_warning
     def exists_many(self, values):
         sql, values = self._exists_sql(values)
         self.cursor.execute(sql)
         result = [res[0] for res in self.cursor.fetchall()]
         return [value in result for value in values]
 
+    @decorate_warning
     def insert(self, value):
         return self.insert_many([value])[0]
 
@@ -83,15 +86,18 @@ class SQLFilter(Filter):
             sql = f"INSERT IGNORE INTO {self.table} (id) VALUES (%s)"
         return sql, values
 
+    @decorate_warning
     def insert_many(self, values):
         sql, values = self._insert_sql(values)
         self.cursor.executemany(sql, values)
         self.connection.commit()
         return [True for _ in values]
 
+    @decorate_warning
     def exists_and_insert(self, value):
         return self.exists_and_insert_many([value])[0]
 
+    @decorate_warning
     def exists_and_insert_many(self, values):
         stats = self.exists_many(values)
         values = [value for stat, value in zip(stats, values) if not stat]

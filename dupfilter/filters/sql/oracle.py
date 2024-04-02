@@ -5,7 +5,6 @@
 
 
 import time
-from dupfilter.filters import Filter
 from dupfilter.filters.sql import SQLFilter
 from dupfilter.filters.sql.mysql import AsyncMySQLFilter
 

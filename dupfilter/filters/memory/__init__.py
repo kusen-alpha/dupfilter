@@ -7,7 +7,7 @@ import sys
 
 import cachetools
 
-from dupfilter.filters import Filter
+from dupfilter.filters import Filter, decorate_warning
 
 
 class MemoryFilter(Filter):
@@ -15,21 +15,26 @@ class MemoryFilter(Filter):
         self.dups = set()
         super(MemoryFilter, self).__init__(*args, **kwargs)
 
+    @decorate_warning
     def exists(self, value):
         value = self._value_hash_and_compress(value)
         return value in self.dups
 
+    @decorate_warning
     def exists_many(self, values):
         return [self.exists(value) for value in values]
 
+    @decorate_warning
     def insert(self, value):
         value = self._value_hash_and_compress(value)
         self.dups.add(value)
         return True
 
+    @decorate_warning
     def insert_many(self, values):
         return [self.insert(value) for value in values]
 
+    @decorate_warning
     def exists_and_insert(self, value):
         value = self._value_hash_and_compress(value)
         stats = value in self.dups
@@ -37,6 +42,7 @@ class MemoryFilter(Filter):
             self.dups.add(value)
         return stats
 
+    @decorate_warning
     def exists_and_insert_many(self, values):
         return [self.exists_and_insert(value) for value in values]
 

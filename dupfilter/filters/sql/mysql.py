@@ -4,7 +4,7 @@
 # date: 2024/3/12
 
 
-from dupfilter.filters import Filter
+from dupfilter.filters import Filter, decorate_warning
 from dupfilter.filters.sql import SQLFilter
 
 
@@ -30,10 +30,12 @@ class AsyncMySQLFilter(SQLFilter, Filter):
                 except Exception as e:
                     return
 
+    @decorate_warning
     async def exists(self, value):
         result = await self.exists_many([value])
         return result[0]
 
+    @decorate_warning
     async def exists_many(self, values):
         sql, values = self._exists_sql(values)
         async with self.pool.acquire() as conn:
@@ -43,10 +45,12 @@ class AsyncMySQLFilter(SQLFilter, Filter):
                 result = [res[0] for res in result]
                 return [value in result for value in values]
 
+    @decorate_warning
     async def insert(self, value):
         result = await self.insert_many([value])
         return result[0]
 
+    @decorate_warning
     async def insert_many(self, values):
         sql, values = self._insert_sql(values)
         async with self.pool.acquire() as conn:
@@ -55,10 +59,12 @@ class AsyncMySQLFilter(SQLFilter, Filter):
                 await conn.commit()
                 return [True for _ in values]
 
+    @decorate_warning
     async def exists_and_insert(self, value):
         result = await self.exists_and_insert_many([value])
         return result[0]
 
+    @decorate_warning
     async def exists_and_insert_many(self, values):
         stats = await self.exists_many(values)
         values = [value for stat, value in zip(stats, values) if not stat]

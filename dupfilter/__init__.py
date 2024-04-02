@@ -19,3 +19,4 @@ from dupfilter.filters.sql.mysql import AsyncMySQLFilter
 from dupfilter.filters.sql.oracle import OracleSQLFilter
 from dupfilter.filters.sql.oracle import AsyncOracleSQLFilter
 from dupfilter.filters.sql.sqlite import SQLiteFilter
+from dupfilter.filters import DefaultFilter

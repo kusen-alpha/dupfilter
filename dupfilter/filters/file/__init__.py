@@ -7,6 +7,7 @@
 import os
 import time
 
+from dupfilter.filters import decorate_warning
 from dupfilter.filters.memory import MemoryFilter
 
 
@@ -24,12 +25,14 @@ class FileFilter(MemoryFilter):
         self.dups.add(value)
         self.file.write(value + '\n')
 
+    @decorate_warning
     def insert(self, value):
         value = self._value_hash_and_compress(value)
         if value not in self.dups:
             self._insert(value)
         return True
 
+    @decorate_warning
     def exists_and_insert(self, value):
         value = self._value_hash_and_compress(value)
         stat = value in self.dups

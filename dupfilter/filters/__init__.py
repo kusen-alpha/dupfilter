@@ -4,7 +4,39 @@
 # date: 2023/9/6
 
 
+import asyncio
+import functools
+
 from dupfilter import utils
+
+
+def decorate_warning(func):
+    @functools.wraps(func)
+    def wrapper(obj, value_or_values, *args, **kwargs):
+        try:
+            result = func(obj, value_or_values, *args, **kwargs)
+        except Exception as e:
+            if isinstance(value_or_values, list):
+                result = [obj.default_stat for _ in value_or_values]
+            else:
+                result = obj.default_stat
+        return result
+
+    @functools.wraps(func)
+    async def async_wrapper(obj, value_or_values, *args, **kwargs):
+        try:
+            result = await func(obj, value_or_values, *args, **kwargs)
+        except Exception as e:
+            if isinstance(value_or_values, list):
+                result = [obj.default_stat for _ in value_or_values]
+            else:
+                result = obj.default_stat
+        return result
+
+    if asyncio.iscoroutinefunction(func):
+        return async_wrapper
+    else:
+        return wrapper
 
 
 class Reset(object):
@@ -24,9 +56,12 @@ class Filter(object):
     def __init__(
             self,
             value_hash_func=utils.md5,
-            value_compress_func=None, ):
+            value_compress_func=None,
+            default_stat=False
+    ):
         self.value_hash_func = value_hash_func
         self.value_compress_func = value_compress_func or (lambda value: value)
+        self.default_stat = bool(default_stat)
 
     def exists(self, value):
         raise NotImplemented
@@ -62,3 +97,20 @@ class ResetFilter(Filter):
         self.reset_check_period = reset_check_period
         self._resetting = False
         super(ResetFilter, self).__init__(*args, **kwargs)
+
+
+class DefaultFilter(object):
+    def __init__(self, default_stat=False):
+        self.default_stat = bool(default_stat)
+
+    def exists(self, value):
+        return self.default_stat
+
+    def insert(self, value):
+        return True
+
+    def exists_many(self, values):
+        return [self.exists(value) for value in values]
+
+    def insert_many(self, values):
+        return [self.insert(value) for value in values]

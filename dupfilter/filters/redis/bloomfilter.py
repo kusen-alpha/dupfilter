@@ -8,6 +8,7 @@ import random
 import cachetools
 
 from dupfilter import utils
+from dupfilter.filters import decorate_warning
 from dupfilter.filters.redis import RedisFilter
 
 EXISTS_SCRIPT = """
@@ -106,25 +107,31 @@ class RedisBloomFilter(RedisFilter):
         self._exists_insert_script = self.server.register_script(
             EXISTS_AND_INSERT_SCRIPT)
 
+    @decorate_warning
     def exists(self, value):
         return self.exists_many([value])[0]
 
+    @decorate_warning
     def exists_many(self, values):
         keys, offsets = self._get_keys_and_offsets(values)
         stats = self._exists_script(keys=keys, args=offsets)
         return [bool(stat) for stat in stats]
 
+    @decorate_warning
     def insert(self, value):
         return self.insert_many([value])[0]
 
+    @decorate_warning
     def insert_many(self, values):
         keys, offsets = self._get_keys_and_offsets(values)
         stat = self._insert_script(keys=keys, args=offsets)
         return [bool(stat) for _ in range(len(values))]
 
+    @decorate_warning
     def exists_and_insert(self, value):
         return self.exists_and_insert_many([value])[0]
 
+    @decorate_warning
     def exists_and_insert_many(self, values):
         keys, offsets = self._get_keys_and_offsets(values)
         stats = self._exists_insert_script(keys=keys, args=offsets)
@@ -143,29 +150,34 @@ class RedisBloomFilter(RedisFilter):
 
 
 class AsyncRedisBloomFilter(RedisBloomFilter):
-
+    @decorate_warning
     async def exists(self, value):
         stats = await self.exists_many([value])
         return stats[0]
 
+    @decorate_warning
     async def exists_many(self, values):
         keys, offsets = self._get_keys_and_offsets(values)
         stats = await self._exists_script(keys=keys, args=offsets)
         return [bool(stat) for stat in stats]
 
+    @decorate_warning
     async def insert(self, value):
         stats = await self.insert_many([value])
         return stats[0]
 
+    @decorate_warning
     async def insert_many(self, values):
         keys, offsets = self._get_keys_and_offsets(values)
         stat = await self._insert_script(keys=keys, args=offsets)
         return [bool(stat) for _ in range(len(values))]
 
+    @decorate_warning
     async def exists_and_insert(self, value):
         stats = await self.exists_and_insert_many([value])
         return stats[0]
 
+    @decorate_warning
     async def exists_and_insert_many(self, values):
         keys, offsets = self._get_keys_and_offsets(values)
         stats = await self._exists_insert_script(keys=keys, args=offsets)
