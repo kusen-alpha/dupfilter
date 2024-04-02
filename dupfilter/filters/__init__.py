@@ -78,11 +78,12 @@ class Filter(object):
             )
             ch = logging.StreamHandler()
             ch.setFormatter(ft)
+            ch.setLevel(logger_level)
             self.logger.addHandler(ch)
         else:
             self.logger = logger
 
-    def _log_exists(self, initial_values,  handle_values, stats):
+    def _log_exists(self, initial_values, handle_values, stats):
         for mixed in zip(stats, handle_values, initial_values):
             self.logger.info('去重查询结果：%s，处理值：%s，原始值：%s' % (
                 mixed[0], mixed[1], mixed[2]))
@@ -98,6 +99,12 @@ class Filter(object):
 
     def insert_many(self, values):
         raise NotImplemented
+
+    def exists_and_insert(self, value):
+        pass
+
+    def exists_and_insert_many(self, values):
+        pass
 
     def _value_hash(self, value):
         return self.value_hash_func(value)
@@ -141,3 +148,9 @@ class DefaultFilter(object):
 
     def insert_many(self, values):
         return [self.insert(value) for value in values]
+
+    def exists_and_insert(self, value):
+        return self.default_stat
+
+    def exists_and_insert_many(self, values):
+        return [self.exists_and_insert(value) for value in values]
