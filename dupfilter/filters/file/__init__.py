@@ -27,17 +27,18 @@ class FileFilter(MemoryFilter):
 
     @decorate_warning
     def insert(self, value):
-        value = self._value_hash_and_compress(value)
-        if value not in self.dups:
-            self._insert(value)
+        new_value = self._value_hash_and_compress(value)
+        if new_value not in self.dups:
+            self._insert(new_value)
         return True
 
     @decorate_warning
     def exists_and_insert(self, value):
-        value = self._value_hash_and_compress(value)
-        stat = value in self.dups
+        new_value = self._value_hash_and_compress(value)
+        stat = new_value in self.dups
+        self._log_exists([value], [new_value], [stat])
         if not stat:
-            self._insert(value)
+            self._insert(new_value)
         return stat
 
 # class FileFilter(MemoryFilter):

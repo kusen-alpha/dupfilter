@@ -51,8 +51,9 @@ class SQLFilter(Filter):
         try:
             self.cursor.execute(sql)
             self.connection.commit()
+            self.logger.info("创建去重表%s成功" % self.table)
         except Exception as e:
-            pass
+            self.logger.info("创建去重表%s已经创建或创建失败" % self.table)
 
     @decorate_warning
     def exists(self, value):
@@ -67,10 +68,12 @@ class SQLFilter(Filter):
 
     @decorate_warning
     def exists_many(self, values):
-        sql, values = self._exists_sql(values)
+        sql, new_values = self._exists_sql(values)
         self.cursor.execute(sql)
         result = [res[0] for res in self.cursor.fetchall()]
-        return [value in result for value in values]
+        stats = [value in result for value in new_values]
+        self._log_exists(values, new_values, stats)
+        return stats
 
     @decorate_warning
     def insert(self, value):

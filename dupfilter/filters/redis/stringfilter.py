@@ -50,7 +50,9 @@ class RedisStringFilter(RedisFilter):
     def exists_many(self, values, expire=7200):
         keys = [self._value_hash_and_compress(value) for value in values]
         stats = self.exists_script(keys=keys, args=[expire])
-        return [bool(stat) for stat in stats]
+        stats = [bool(stat) for stat in stats]
+        self._log_exists(values, keys, stats)
+        return stats
 
     @decorate_warning
     def insert(self, value, expire=2592000):
@@ -89,4 +91,6 @@ class AsyncRedisStringFilter(RedisStringFilter):
     async def exists_many(self, values, expire=7200):
         keys = [self._value_hash_and_compress(value) for value in values]
         stats = await self.exists_script(keys=keys, args=[expire])
-        return [bool(stat) for stat in stats]
+        stats = [bool(stat) for stat in stats]
+        self._log_exists(values, keys, stats)
+        return stats

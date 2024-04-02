@@ -17,8 +17,10 @@ class MemoryFilter(Filter):
 
     @decorate_warning
     def exists(self, value):
-        value = self._value_hash_and_compress(value)
-        return value in self.dups
+        new_value = self._value_hash_and_compress(value)
+        stat = new_value in self.dups
+        self._log_exists([value], [new_value], [stat])
+        return stat
 
     @decorate_warning
     def exists_many(self, values):
@@ -26,8 +28,8 @@ class MemoryFilter(Filter):
 
     @decorate_warning
     def insert(self, value):
-        value = self._value_hash_and_compress(value)
-        self.dups.add(value)
+        new_value = self._value_hash_and_compress(value)
+        self.dups.add(new_value)
         return True
 
     @decorate_warning
@@ -36,11 +38,12 @@ class MemoryFilter(Filter):
 
     @decorate_warning
     def exists_and_insert(self, value):
-        value = self._value_hash_and_compress(value)
-        stats = value in self.dups
-        if not stats:
-            self.dups.add(value)
-        return stats
+        new_value = self._value_hash_and_compress(value)
+        stat = new_value in self.dups
+        self._log_exists([value], [new_value], [stat])
+        if not stat:
+            self.dups.add(new_value)
+        return stat
 
     @decorate_warning
     def exists_and_insert_many(self, values):

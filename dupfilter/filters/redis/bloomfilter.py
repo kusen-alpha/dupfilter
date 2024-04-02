@@ -113,9 +113,11 @@ class RedisBloomFilter(RedisFilter):
 
     @decorate_warning
     def exists_many(self, values):
-        keys, offsets = self._get_keys_and_offsets(values)
+        keys, offsets, new_values = self._get_keys_and_offsets(values)
         stats = self._exists_script(keys=keys, args=offsets)
-        return [bool(stat) for stat in stats]
+        stats = [bool(stat) for stat in stats]
+        self._log_exists(values, new_values, stats)
+        return stats
 
     @decorate_warning
     def insert(self, value):
@@ -123,7 +125,7 @@ class RedisBloomFilter(RedisFilter):
 
     @decorate_warning
     def insert_many(self, values):
-        keys, offsets = self._get_keys_and_offsets(values)
+        keys, offsets, new_values = self._get_keys_and_offsets(values)
         stat = self._insert_script(keys=keys, args=offsets)
         return [bool(stat) for _ in range(len(values))]
 
@@ -133,9 +135,11 @@ class RedisBloomFilter(RedisFilter):
 
     @decorate_warning
     def exists_and_insert_many(self, values):
-        keys, offsets = self._get_keys_and_offsets(values)
+        keys, offsets, new_values = self._get_keys_and_offsets(values)
         stats = self._exists_insert_script(keys=keys, args=offsets)
-        return [bool(stat) for stat in stats]
+        stats = [bool(stat) for stat in stats]
+        self._log_exists(values, new_values, stats)
+        return stats
 
     def _get_keys_and_offsets(self, values):
         values = [self._value_hash(value) for value in values]
@@ -143,7 +147,7 @@ class RedisBloomFilter(RedisFilter):
         offsets = [','.join([str(sh.hash(
             self._value_compress(value))) for sh in self.shs]
         ) for value in values]
-        return keys, offsets
+        return keys, offsets, values
 
     def _get_block(self, value):
         return str(int(value[0:2], 16) % self.block_num)
@@ -157,9 +161,11 @@ class AsyncRedisBloomFilter(RedisBloomFilter):
 
     @decorate_warning
     async def exists_many(self, values):
-        keys, offsets = self._get_keys_and_offsets(values)
+        keys, offsets, new_values = self._get_keys_and_offsets(values)
         stats = await self._exists_script(keys=keys, args=offsets)
-        return [bool(stat) for stat in stats]
+        stats = [bool(stat) for stat in stats]
+        self._log_exists(values, new_values, stats)
+        return stats
 
     @decorate_warning
     async def insert(self, value):
@@ -168,7 +174,7 @@ class AsyncRedisBloomFilter(RedisBloomFilter):
 
     @decorate_warning
     async def insert_many(self, values):
-        keys, offsets = self._get_keys_and_offsets(values)
+        keys, offsets, new_values = self._get_keys_and_offsets(values)
         stat = await self._insert_script(keys=keys, args=offsets)
         return [bool(stat) for _ in range(len(values))]
 
@@ -179,9 +185,11 @@ class AsyncRedisBloomFilter(RedisBloomFilter):
 
     @decorate_warning
     async def exists_and_insert_many(self, values):
-        keys, offsets = self._get_keys_and_offsets(values)
+        keys, offsets, new_values = self._get_keys_and_offsets(values)
         stats = await self._exists_insert_script(keys=keys, args=offsets)
-        return [bool(stat) for stat in stats]
+        stats = [bool(stat) for stat in stats]
+        self._log_exists(values, new_values, stats)
+        return stats
 
 
 # class BloomFilter(RedisResetFilter):

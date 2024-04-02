@@ -27,7 +27,9 @@ class AsyncMySQLFilter(SQLFilter, Filter):
                 try:
                     await cur.execute(sql)
                     await conn.commit()
+                    self.logger.info("创建去重表%s成功" % self.table)
                 except Exception as e:
+                    self.logger.info("创建去重表%s已经创建或创建失败" % self.table)
                     return
 
     @decorate_warning
@@ -37,13 +39,15 @@ class AsyncMySQLFilter(SQLFilter, Filter):
 
     @decorate_warning
     async def exists_many(self, values):
-        sql, values = self._exists_sql(values)
+        sql, new_values = self._exists_sql(values)
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cur:
                 await cur.execute(sql)
                 result = await cur.fetchall()
                 result = [res[0] for res in result]
-                return [value in result for value in values]
+                stats = [value in result for value in new_values]
+                self._log_exists(values, new_values, stats)
+                return stats
 
     @decorate_warning
     async def insert(self, value):

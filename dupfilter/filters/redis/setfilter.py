@@ -66,9 +66,11 @@ class RedisSetFilter(RedisFilter):
 
     @decorate_warning
     def exists_many(self, values):
-        keys, values = self._get_keys_and_values(values)
-        stats = self._exists_script(keys=keys, args=values)
-        return [bool(stat) for stat in stats]
+        keys, new_values = self._get_keys_and_values(values)
+        stats = self._exists_script(keys=keys, args=new_values)
+        stats = [bool(stat) for stat in stats]
+        self._log_exists(values, new_values, stats)
+        return stats
 
     @decorate_warning
     def exists_and_insert(self, value):
@@ -76,9 +78,11 @@ class RedisSetFilter(RedisFilter):
 
     @decorate_warning
     def exists_and_insert_many(self, values):
-        keys, values = self._get_keys_and_values(values)
-        stats = self._exists_and_insert_script(keys=keys, args=values)
-        return [bool(stat) for stat in stats]
+        keys, new_values = self._get_keys_and_values(values)
+        stats = self._exists_and_insert_script(keys=keys, args=new_values)
+        stats = [bool(stat) for stat in stats]
+        self._log_exists(values, new_values, stats)
+        return stats
 
     @decorate_warning
     def insert(self, value):
@@ -121,9 +125,11 @@ class AsyncRedisSetFilter(RedisSetFilter):
 
     @decorate_warning
     async def exists_many(self, values):
-        keys, values = self._get_keys_and_values(values)
-        stats = await self._exists_script(keys=keys, args=values)
-        return [bool(stat) for stat in stats]
+        keys, new_values = self._get_keys_and_values(values)
+        stats = await self._exists_script(keys=keys, args=new_values)
+        stats = [bool(stat) for stat in stats]
+        self._log_exists(values, new_values, stats)
+        return stats
 
     @decorate_warning
     async def exists_and_insert(self, value):
@@ -132,9 +138,11 @@ class AsyncRedisSetFilter(RedisSetFilter):
 
     @decorate_warning
     async def exists_and_insert_many(self, values):
-        keys, values = self._get_keys_and_values(values)
+        keys, new_values = self._get_keys_and_values(values)
         stats = await self._exists_and_insert_script(keys=keys, args=values)
-        return [bool(stat) for stat in stats]
+        stats = [bool(stat) for stat in stats]
+        self._log_exists(values, new_values, stats)
+        return stats
 
 # class AsyncResetRedisSetFilter(RedisSetFilter):
 #     async def insert(self, value):

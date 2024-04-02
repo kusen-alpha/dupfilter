@@ -6,31 +6,36 @@
 
 import asyncio
 import functools
+import logging
 
 from dupfilter import utils
 
 
 def decorate_warning(func):
     @functools.wraps(func)
-    def wrapper(obj, value_or_values, *args, **kwargs):
+    def wrapper(filter, value_or_values, *args, **kwargs):
         try:
-            result = func(obj, value_or_values, *args, **kwargs)
+            result = func(filter, value_or_values, *args, **kwargs)
         except Exception as e:
             if isinstance(value_or_values, list):
-                result = [obj.default_stat for _ in value_or_values]
+                result = [filter.default_stat for _ in value_or_values]
             else:
-                result = obj.default_stat
+                result = filter.default_stat
+            filter.logger.warning('去重操作失败，返回默认值：%s，错误详情：%s' % (
+                filter.default_stat, str(e)))
         return result
 
     @functools.wraps(func)
-    async def async_wrapper(obj, value_or_values, *args, **kwargs):
+    async def async_wrapper(filter, value_or_values, *args, **kwargs):
         try:
-            result = await func(obj, value_or_values, *args, **kwargs)
+            result = await func(filter, value_or_values, *args, **kwargs)
         except Exception as e:
             if isinstance(value_or_values, list):
-                result = [obj.default_stat for _ in value_or_values]
+                result = [filter.default_stat for _ in value_or_values]
             else:
-                result = obj.default_stat
+                result = filter.default_stat
+            filter.logger.warning('去重操作失败，返回默认值：%s，错误详情：%s' % (
+                filter.default_stat, str(e)))
         return result
 
     if asyncio.iscoroutinefunction(func):
@@ -57,11 +62,30 @@ class Filter(object):
             self,
             value_hash_func=utils.md5,
             value_compress_func=None,
-            default_stat=False
+            default_stat=False,
+            logger=None,
+            logger_level=logging.INFO
     ):
         self.value_hash_func = value_hash_func
         self.value_compress_func = value_compress_func or (lambda value: value)
         self.default_stat = bool(default_stat)
+        if not logger:
+            self.logger = logging.getLogger('dupfilter')
+            self.logger.setLevel(logger_level)
+            ft = logging.Formatter(
+                fmt='%(asctime)s [%(name)s] %(levelname)s: %(message)s',
+                datefmt='%Y-%m-%d %H:%M:%S'
+            )
+            ch = logging.StreamHandler()
+            ch.setFormatter(ft)
+            self.logger.addHandler(ch)
+        else:
+            self.logger = logger
+
+    def _log_exists(self, initial_values,  handle_values, stats):
+        for mixed in zip(stats, handle_values, initial_values):
+            self.logger.info('去重查询结果：%s，处理值：%s，原始值：%s' % (
+                mixed[0], mixed[1], mixed[2]))
 
     def exists(self, value):
         raise NotImplemented
@@ -83,6 +107,9 @@ class Filter(object):
 
     def _value_hash_and_compress(self, value):
         return self.value_compress_func(self.value_hash_func(value))
+
+    def close(self):
+        pass
 
 
 class ResetFilter(Filter):
