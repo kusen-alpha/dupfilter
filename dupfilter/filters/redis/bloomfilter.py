@@ -3,9 +3,6 @@
 # email: 1194542196@qq.com
 # date: 2023/9/6
 
-import random
-
-import cachetools
 
 from dupfilter import utils
 from dupfilter.filters import decorate_warning

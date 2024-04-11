@@ -3,9 +3,6 @@
 # email: 1194542196@qq.com
 # date: 2023/9/7
 
-import sys
-
-import cachetools
 
 from dupfilter.filters import Filter, decorate_warning
 
