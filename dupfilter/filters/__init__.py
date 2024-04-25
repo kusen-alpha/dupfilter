@@ -13,29 +13,29 @@ from dupfilter import utils
 
 def decorate_warning(func):
     @functools.wraps(func)
-    def wrapper(filter, value_or_values, *args, **kwargs):
+    def wrapper(flt, value_or_values, *args, **kwargs):
         try:
-            result = func(filter, value_or_values, *args, **kwargs)
+            result = func(flt, value_or_values, *args, **kwargs)
         except Exception as e:
             if isinstance(value_or_values, list):
-                result = [filter.default_stat for _ in value_or_values]
+                result = [flt.default_stat for _ in value_or_values]
             else:
-                result = filter.default_stat
-            filter.logger.warning('去重操作失败，返回默认值：%s，错误详情：%s' % (
-                filter.default_stat, str(e)))
+                result = flt.default_stat
+            flt.logger.warning('去重操作失败，返回默认值：%s，错误详情：%s' % (
+                flt.default_stat, str(e)))
         return result
 
     @functools.wraps(func)
-    async def async_wrapper(filter, value_or_values, *args, **kwargs):
+    async def async_wrapper(flt, value_or_values, *args, **kwargs):
         try:
-            result = await func(filter, value_or_values, *args, **kwargs)
+            result = await func(flt, value_or_values, *args, **kwargs)
         except Exception as e:
             if isinstance(value_or_values, list):
-                result = [filter.default_stat for _ in value_or_values]
+                result = [flt.default_stat for _ in value_or_values]
             else:
-                result = filter.default_stat
-            filter.logger.warning('去重操作失败，返回默认值：%s，错误详情：%s' % (
-                filter.default_stat, str(e)))
+                result = flt.default_stat
+            flt.logger.warning('去重操作失败，返回默认值：%s，错误详情：%s' % (
+                flt.default_stat, str(e)))
         return result
 
     if asyncio.iscoroutinefunction(func):
@@ -51,7 +51,7 @@ class Reset(object):
         self.max_rate = max_rate
         self.reset_rate = reset_to_rate
         self.resetting = False
-        self.filter = None
+        self.flt = None
 
     @property
     def used(self):
@@ -59,6 +59,11 @@ class Reset(object):
 
     def reset(self):
         pass
+
+
+def decorate_reset(func):
+    # 进行重置操作
+    pass
 
 
 class Filter(object):
@@ -88,12 +93,12 @@ class Filter(object):
         else:
             self.logger = logger
         if reset:
-            reset.filter = self
+            reset.flt = self
         self.reset = reset
 
     def _log_exists(self, initial_values, handle_values, stats):
         for mixed in zip(stats, handle_values, initial_values):
-            self.logger.info('去重查询结果：%s，处理值：%s，原始值：%s' % (
+            self.logger.info('去重结果：%s，去重值：%s，原始值：%s' % (
                 mixed[0], mixed[1], mixed[2]))
 
     def exists(self, value):
