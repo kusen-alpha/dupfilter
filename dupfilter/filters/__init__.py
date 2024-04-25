@@ -46,24 +46,63 @@ def decorate_warning(func):
 
 class Reset(object):
     def __init__(self, max_count, max_rate=0.8,
-                 reset_to_rate=0.5, monitor_time=3600):
+                 reset_to_rate=0.5, reset_type=None,
+                 monitor_time=3600):
         self.max_count = max_count
         self.max_rate = max_rate
         self.reset_rate = reset_to_rate
+        self.reset_type = reset_type
+        self.monitor_time = monitor_time
         self.resetting = False
         self.flt = None
 
     @property
     def used(self):
+        return self.current_count() / self.max_count
+
+    def current_count(self):
         raise NotImplemented
 
+    def _reset(self):
+        if self.resetting:
+            return
+        if self.used < self.max_rate:
+            return
+        self.resetting = True
+        self.reset()
+        self.resetting = False
+
     def reset(self):
-        pass
+        raise NotImplemented
 
 
 def decorate_reset(func):
-    # 进行重置操作
-    pass
+    @functools.wraps(func)
+    def wrapper(flt, *args, **kwargs):
+        try:
+            if flt.reset:
+                flt.reset._reset()
+        except Exception as e:
+            flt.reset.resetting = False
+            flt.logger.warning("重置操作失败：%s" % str(e))
+        result = func(flt, *args, **kwargs)
+        return result
+
+    @functools.wraps(func)
+    async def async_wrapper(flt, *args, **kwargs):
+        try:
+            if flt.reset:
+                await flt.reset._reset()
+        except Exception as e:
+            flt.reset.resetting = False
+            flt.logger.warning("重置操作失败：%s" % str(e))
+        result = await func(flt, *args, **kwargs)
+        return result
+
+    if asyncio.iscoroutinefunction(func):
+        return async_wrapper
+    else:
+        return wrapper
 
 
 class Filter(object):

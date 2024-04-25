@@ -5,6 +5,12 @@
 
 
 from dupfilter.filters import Filter, decorate_warning
+from dupfilter.filters import Reset, decorate_reset
+
+
+class MemoryReset(Reset):
+    def current_count(self):
+        return len(self.flt.dups)
 
 
 class MemoryFilter(Filter):
@@ -13,6 +19,7 @@ class MemoryFilter(Filter):
         super(MemoryFilter, self).__init__(*args, **kwargs)
 
     @decorate_warning
+    @decorate_reset
     def exists(self, value):
         new_value = self._value_hash_and_compress(value)
         stat = new_value in self.dups
