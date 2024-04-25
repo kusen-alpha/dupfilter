@@ -154,3 +154,25 @@ class DefaultFilter(object):
 
     def exists_and_insert_many(self, values):
         return [self.exists_and_insert(value) for value in values]
+
+
+class AsyncDefaultFilter(DefaultFilter):
+    async def exists(self, *args, **kwargs):
+        return super(AsyncDefaultFilter, self).exists(*args, **kwargs)
+
+    async def insert(self, *args, **kwargs):
+        return super(AsyncDefaultFilter, self).insert(*args, **kwargs)
+
+    async def exists_many(self, *args, **kwargs):
+        return super(AsyncDefaultFilter, self).exists_many(*args, **kwargs)
+
+    async def insert_many(self, *args, **kwargs):
+        return super(AsyncDefaultFilter, self).insert_many(*args, **kwargs)
+
+    async def exists_and_insert(self, *args, **kwargs):
+        return super(AsyncDefaultFilter, self).exists_and_insert(
+            *args, **kwargs)
+
+    async def exists_and_insert_many(self, *args, **kwargs):
+        return super(AsyncDefaultFilter, self).exists_and_insert_many(
+            *args, **kwargs)

@@ -20,3 +20,4 @@ from dupfilter.filters.sql.oracle import OracleSQLFilter
 from dupfilter.filters.sql.oracle import AsyncOracleSQLFilter
 from dupfilter.filters.sql.sqlite import SQLiteFilter
 from dupfilter.filters import DefaultFilter
+from dupfilter.filters import AsyncDefaultFilter
