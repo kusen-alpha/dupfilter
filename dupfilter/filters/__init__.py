@@ -45,13 +45,17 @@ def decorate_warning(func):
 
 
 class Reset(object):
-    def __init__(self, max_rate=0.8, reset_rate=0.5):
+    def __init__(self, max_count, max_rate=0.8,
+                 reset_to_rate=0.5, monitor_time=3600):
+        self.max_count = max_count
         self.max_rate = max_rate
-        self.reset_rate = reset_rate
+        self.reset_rate = reset_to_rate
         self.resetting = False
+        self.filter = None
 
+    @property
     def used(self):
-        pass
+        raise NotImplemented
 
     def reset(self):
         pass
@@ -64,7 +68,8 @@ class Filter(object):
             value_compress_func=None,
             default_stat=False,
             logger=None,
-            logger_level=logging.INFO
+            logger_level=logging.INFO,
+            reset=None
     ):
         self.value_hash_func = value_hash_func
         self.value_compress_func = value_compress_func or (lambda value: value)
@@ -82,6 +87,9 @@ class Filter(object):
             self.logger.addHandler(ch)
         else:
             self.logger = logger
+        if reset:
+            reset.filter = self
+        self.reset = reset
 
     def _log_exists(self, initial_values, handle_values, stats):
         for mixed in zip(stats, handle_values, initial_values):
@@ -117,20 +125,6 @@ class Filter(object):
 
     def close(self):
         pass
-
-
-class ResetFilter(Filter):
-    def __init__(self,
-                 reset=False,
-                 reset_proportion=0.8,
-                 reset_check_period=7200,
-                 *args, **kwargs
-                 ):
-        self.reset = reset
-        self.reset_proportion = reset_proportion
-        self.reset_check_period = reset_check_period
-        self._resetting = False
-        super(ResetFilter, self).__init__(*args, **kwargs)
 
 
 class DefaultFilter(object):
