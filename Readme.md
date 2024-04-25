@@ -74,7 +74,7 @@
 2. 基于Lua脚本支持批量操作，速度快。
 3. 支持异步，可快速集成到异步代码和异步框架中。
 
-# 代码示例
+# 去重示例
 
 ## RedisBloomFilter
 
@@ -112,17 +112,37 @@ loop.run_until_complete(test())
 
 ```
 
-# 相关库
-1. redis：redis/aioredis
-2. mysql：pymysql/aiomysql
-3. sqlite：sqlite3
-4. oracle：cx_Oracle/cx_Oracle_async
+## 默认去重
+
+```python
+# 在项目中，可能在外层参数确认是否走去重逻辑，
+# 这时为了方法的逻辑一致性，预留默认去重类
+
+from dupfilter import MemoryFilter
+from dupfilter import DefaultFilter
+
+is_dup = True  # 全局设置是否去重
+if is_dup:
+    flr = MemoryFilter()
+else:
+    flr = DefaultFilter(default_stat=False)
+
+print(flr.exists("1"))
+```
 
 ## Others
 
 和上述示例类似
 
+# 相关库
+
+1. redis：redis/aioredis
+2. mysql：pymysql/aiomysql
+3. sqlite：sqlite3
+4. oracle：cx_Oracle/cx_Oracle_async
+
 # 后续优化
+
 1. 部分去重方案的重置逻辑完善
 
 # 关于作者
