@@ -112,11 +112,9 @@ loop.run_until_complete(test())
 
 ```
 
-## 默认去重
-
+## DefaultFilter
+在项目中，可能在外层参数确认是否走去重逻辑，这时为了方法的逻辑一致性，预留默认去重类。
 ```python
-# 在项目中，可能在外层参数确认是否走去重逻辑，
-# 这时为了方法的逻辑一致性，预留默认去重类
 
 from dupfilter import MemoryFilter
 from dupfilter import DefaultFilter
