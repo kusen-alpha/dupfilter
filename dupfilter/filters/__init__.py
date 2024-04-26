@@ -8,6 +8,8 @@ import asyncio
 import functools
 import logging
 
+from cachetools import TTLCache
+
 from dupfilter import utils
 
 
@@ -54,14 +56,15 @@ class Reset(object):
         self.reset_type = reset_type
         self.monitor_time = monitor_time
         self.resetting = False
-        self.timer = None  # 周期进行检测
+        self.timer = TTLCache(1, monitor_time)
+        self.set_timer()
         self.flt = None
 
     def set_timer(self):
-        pass
+        self.timer['timer'] = 'timer'
 
     def get_timer(self):
-        return True
+        return self.timer.get('timer')
 
     @property
     def used_rate(self):
