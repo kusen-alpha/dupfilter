@@ -50,27 +50,43 @@ class Reset(object):
                  monitor_time=3600):
         self.max_count = max_count
         self.max_rate = max_rate
-        self.reset_rate = reset_to_rate
+        self.reset_to_rate = reset_to_rate
         self.reset_type = reset_type
         self.monitor_time = monitor_time
         self.resetting = False
+        self.timer = None  # 周期进行检测
         self.flt = None
 
-    @property
-    def used(self):
-        return self.current_count() / self.max_count
+    def set_timer(self):
+        pass
 
+    def get_timer(self):
+        return True
+
+    @property
+    def used_rate(self):
+        return self.current_count / self.max_count
+
+    @property
     def current_count(self):
         raise NotImplemented
+
+    @property
+    def reset_count(self):
+        return self.current_count - int(self.max_count * self.reset_to_rate)
 
     def _reset(self):
         if self.resetting:
             return
-        if self.used < self.max_rate:
+        if self.get_timer():
+            return
+        if self.used_rate < self.max_rate:
             return
         self.resetting = True
         self.reset()
-        self.resetting = False
+        if self.resetting:
+            self.resetting = False
+        self.set_timer()
 
     def reset(self):
         raise NotImplemented
