@@ -26,7 +26,6 @@ class MemoryFilter(Filter):
         super(MemoryFilter, self).__init__(*args, **kwargs)
 
     @decorate_warning
-    @decorate_reset
     def exists(self, value):
         new_value = self._value_hash_and_compress(value)
         stat = new_value in self.dups
@@ -34,7 +33,6 @@ class MemoryFilter(Filter):
         return stat
 
     @decorate_warning
-    @decorate_reset
     def exists_many(self, values):
         return [self.exists(value) for value in values]
 
@@ -46,7 +44,6 @@ class MemoryFilter(Filter):
         return True
 
     @decorate_warning
-    @decorate_reset
     def insert_many(self, values):
         return [self.insert(value) for value in values]
 
@@ -61,6 +58,5 @@ class MemoryFilter(Filter):
         return stat
 
     @decorate_warning
-    @decorate_reset
     def exists_and_insert_many(self, values):
         return [self.exists_and_insert(value) for value in values]
