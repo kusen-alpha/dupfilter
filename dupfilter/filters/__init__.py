@@ -233,3 +233,30 @@ class AsyncDefaultFilter(DefaultFilter):
     async def exists_and_insert_many(self, *args, **kwargs):
         return super(AsyncDefaultFilter, self).exists_and_insert_many(
             *args, **kwargs)
+
+
+class FilterCounter(object):
+    def __init__(self, stats=None):
+        if not stats:
+            stats = []
+        self.stats = [bool(stat) for stat in stats]
+
+    def count(self, exist=True):
+        filter_stats = [stat for stat in self.stats if stat == bool(exist)]
+        return len(filter_stats)
+
+    def insert_stat(self, stat):
+        self.stats.append(bool(stat))
+
+    def insert_stats(self, stats):
+        for stat in stats:
+            self.insert_stat(stat)
+
+    def any(self, exist=True):
+        return self.count(exist) > 0
+
+    def all(self, exist=True):
+        return self.count(exist) == len(self.stats)
+
+    def reach(self, count, exist=True):
+        return self.count(exist) >= count
