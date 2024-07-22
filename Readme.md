@@ -128,6 +128,21 @@ else:
 print(flr.exists("1"))
 ```
 
+## FilterCounter
+对去重结果进行统计判断
+```python
+from dupfilter import MemoryFilter
+from dupfilter import FilterCounter
+flt = MemoryFilter()
+flt_counter = FilterCounter()
+values = ['1', '2', '3']
+for value in values:
+    flt_counter.insert_stat(flt.exists(value))
+
+# 进行判断和统计
+print(flt_counter.any(), flt_counter.all(), flt_counter.count())
+```
+
 ## Others
 
 和上述示例类似
