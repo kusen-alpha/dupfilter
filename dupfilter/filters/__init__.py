@@ -131,7 +131,7 @@ class Filter(object):
             value_compress_func=None,
             default_stat=False,
             logger=None,
-            logger_level=logging.INFO,
+            logger_level=logging.DEBUG,
             reset=None
     ):
         self.value_hash_func = value_hash_func
@@ -212,6 +212,9 @@ class DefaultFilter(object):
     def exists_and_insert_many(self, values):
         return [self.exists_and_insert(value) for value in values]
 
+    def close(self):
+        pass
+
 
 class AsyncDefaultFilter(DefaultFilter):
     async def exists(self, *args, **kwargs):
@@ -241,9 +244,9 @@ class FilterCounter(object):
             stats = []
         self.stats = [bool(stat) for stat in stats]
 
-    def count(self, exist=True):
-        filter_stats = [stat for stat in self.stats if stat == bool(exist)]
-        return len(filter_stats)
+    def count(self, stat=True):
+        result = [_stat for _stat in self.stats if _stat == bool(stat)]
+        return len(result)
 
     def insert_stat(self, stat):
         self.stats.append(bool(stat))
@@ -252,11 +255,28 @@ class FilterCounter(object):
         for stat in stats:
             self.insert_stat(stat)
 
-    def any(self, exist=True):
-        return self.count(exist) > 0
+    def any(self, stat=True):
+        return self.count(stat) > 0
 
-    def all(self, exist=True):
-        return self.count(exist) == len(self.stats)
+    def all(self, stat=True):
+        return self.count(stat) == len(self.stats)
 
-    def reach(self, count, exist=True):
-        return self.count(exist) >= count
+    def reach(self, count, stat=True):
+        return self.count(stat) >= count
+
+
+class PageFilterCounter(FilterCounter):
+    def __init__(self, stats=None, max_page=None, current_page=None,
+                 duplicate=False):
+        super(PageFilterCounter, self).__init__(stats)
+        self.max_page = max_page
+        if not duplicate:
+            self.max_page = None
+        self.current_page = 1 if current_page == 0 else current_page
+
+    def has_next(self):
+        if not self.max_page or not self.current_page:
+            return True
+        if self.current_page < self.max_page:
+            return True
+        return False

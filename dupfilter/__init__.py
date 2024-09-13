@@ -22,3 +22,4 @@ from dupfilter.filters.sql.sqlite import SQLiteFilter
 from dupfilter.filters import DefaultFilter
 from dupfilter.filters import AsyncDefaultFilter
 from dupfilter.filters import FilterCounter
+from dupfilter.filters import PageFilterCounter

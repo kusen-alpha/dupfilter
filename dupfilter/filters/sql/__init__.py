@@ -46,14 +46,19 @@ class SQLFilter(Filter):
                 """ % self.table
         return sql
 
+    def _exists_table(self):
+        return False
+
     def _create_table(self):
+        if self._exists_table():
+            return
         sql = self._create_table_sql()
         try:
             self.cursor.execute(sql)
             self.connection.commit()
             self.logger.info("创建去重表%s成功" % self.table)
         except Exception as e:
-            self.logger.info("创建去重表%s已经创建或创建失败" % self.table)
+            self.logger.info("创建去重表%s失败" % self.table)
 
     @decorate_warning
     def exists(self, value):
@@ -106,6 +111,14 @@ class SQLFilter(Filter):
         values = [value for stat, value in zip(stats, values) if not stat]
         self.insert_many(values)
         return stats
+
+    def close(self):
+        try:
+            self.cursor.close()
+            self.connection.close()
+            self.logger.info("去重数据库连接关闭成功")
+        except Exception as e:
+            self.logger.warning("去重数据库连接关闭失败：%s" % str(e))
 
 
 if __name__ == '__main__':
