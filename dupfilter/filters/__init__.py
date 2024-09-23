@@ -264,6 +264,11 @@ class FilterCounter(object):
     def reach(self, count, stat=True):
         return self.count(stat) >= count
 
+    def appeared(self, index, stat=True):
+        if len(self.stats) >= index and self.stats[-1] == stat:
+            return True
+        return False
+
 
 class PageFilterCounter(FilterCounter):
     def __init__(self, stats=None, max_page=None, current_page=None,
