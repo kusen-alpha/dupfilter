@@ -134,7 +134,7 @@ class Filter(object):
             logger_level=logging.DEBUG,
             reset=None
     ):
-        self.value_hash_func = value_hash_func
+        self.value_hash_func = value_hash_func or (lambda value: value)
         self.value_compress_func = value_compress_func or (lambda value: value)
         self.default_stat = bool(default_stat)
         if not logger:

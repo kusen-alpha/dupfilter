@@ -75,7 +75,11 @@ class SQLFilter(Filter):
     def exists_many(self, values):
         sql, new_values = self._exists_sql(values)
         self.cursor.execute(sql)
-        result = [res[0] for res in self.cursor.fetchall()]
+        result = self.cursor.fetchall()
+        try:
+            result = [res[0] for res in result]
+        except KeyError:
+            result = [res['id'] for res in result]
         stats = [value in result for value in new_values]
         self._log_exists(values, new_values, stats)
         return stats
