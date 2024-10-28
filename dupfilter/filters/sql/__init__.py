@@ -31,14 +31,14 @@ class SQLFilter(Filter):
     def _create_table_sql(self):
         if not self.record_time:
             sql = """  
-            CREATE TABLE %s (  
+            CREATE TABLE IF NOT EXISTS %s (  
                 id VARCHAR(32) NOT NULL,
                 PRIMARY KEY (id)  
             )
             """ % self.table
         else:
             sql = """  
-            CREATE TABLE %s (  
+            CREATE TABLE IF NOT EXISTS %s (  
                 id VARCHAR(32) NOT NULL,  
                 insert_time INT ,
                 PRIMARY KEY (id)  
