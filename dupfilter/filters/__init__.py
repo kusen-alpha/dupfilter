@@ -140,14 +140,15 @@ class Filter(object):
         if not logger:
             self.logger = logging.getLogger('dupfilter')
             self.logger.setLevel(logger_level)
-            ft = logging.Formatter(
-                fmt='%(asctime)s [%(name)s] %(levelname)s: %(message)s',
-                datefmt='%Y-%m-%d %H:%M:%S'
-            )
-            ch = logging.StreamHandler()
-            ch.setFormatter(ft)
-            ch.setLevel(logger_level)
-            self.logger.addHandler(ch)
+            if not self.logger.handlers:
+                ft = logging.Formatter(
+                    fmt='%(asctime)s [%(name)s] %(levelname)s: %(message)s',
+                    datefmt='%Y-%m-%d %H:%M:%S'
+                )
+                ch = logging.StreamHandler()
+                ch.setFormatter(ft)
+                ch.setLevel(logger_level)
+                self.logger.addHandler(ch)
         else:
             self.logger = logger
         if reset:
