@@ -10,20 +10,19 @@ from dupfilter.filters import Filter, decorate_warning
 
 class SQLFilter(Filter):
 
-    def __init__(self, connection, cursor, table,
+    def __init__(self, connection, table,
                  record_time=False, *args, **kwargs):
         """
         需建立一张包含id、insert_time（可选，结合record_time逻辑）的表，id为主键
         :param connection:
-        :param cursor:
         :param table:
         :param record_time: 是否记录插入时间
         :param args:
         :param kwargs:
         """
-        self.cursor = cursor
         self.table = table
         self.connection = connection
+        self.cursor = self.connection.cursor()
         self.record_time = record_time
         super(SQLFilter, self).__init__(*args, **kwargs)
         self._create_table()
