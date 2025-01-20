@@ -55,7 +55,7 @@ class SQLFilter(Filter):
         try:
             self.cursor.execute(sql)
             self.connection.commit()
-            self.logger.info("创建去重表%s成功" % self.table)
+            # self.logger.info("创建去重表%s成功" % self.table)
         except Exception as e:
             self.logger.info("创建去重表%s失败" % self.table)
 
