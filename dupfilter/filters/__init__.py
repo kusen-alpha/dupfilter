@@ -190,6 +190,15 @@ class Filter(object):
     def close(self):
         pass
 
+    def release(self, *args, **kwargs):
+        """
+        释放去重种子
+        :param args:
+        :param kwargs:
+        :return:
+        """
+        pass
+
 
 class DefaultFilter(object):
     def __init__(self, default_stat=False):
@@ -214,6 +223,15 @@ class DefaultFilter(object):
         return [self.exists_and_insert(value) for value in values]
 
     def close(self):
+        pass
+
+    def release(self, *args, **kwargs):
+        """
+        释放去重种子
+        :param args:
+        :param kwargs:
+        :return:
+        """
         pass
 
 
