@@ -16,9 +16,11 @@ class FileReset(MemoryReset):
 
     def reset(self):
         super(FileReset, self).reset()
-        self.flt.file.truncate(0)
+        self.flt.file.seek(0)
+        self.flt.file.truncate()
         for dup in self.flt.dups:
             self.flt.file.write(dup + '\n')
+        self.flt.file.flush()
 
 
 class FileFilter(MemoryFilter):
@@ -26,6 +28,7 @@ class FileFilter(MemoryFilter):
                  path='./',
                  *args, **kwargs):
         self.path = path
+        os.makedirs(self.path, exist_ok=True)
         self.file = open(os.path.join(self.path, 'dup'), 'a+')
         self.file.seek(0)
         super(FileFilter, self).__init__(*args, **kwargs)
@@ -51,3 +54,10 @@ class FileFilter(MemoryFilter):
         if not stat:
             self._insert(new_value)
         return stat
+
+    def close(self):
+        try:
+            self.file.flush()
+            self.file.close()
+        except Exception as e:
+            self.logger.warning("文件去重句柄关闭失败：%s" % str(e))

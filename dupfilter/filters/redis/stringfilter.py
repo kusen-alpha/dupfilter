@@ -94,3 +94,15 @@ class AsyncRedisStringFilter(RedisStringFilter):
         stats = [bool(stat) for stat in stats]
         self._log_exists(values, keys, stats)
         return stats
+
+    async def exists_and_lock(self, value, expire=7200):
+        return (await self.exists_and_lock_many([value], expire))[0]
+
+    async def exists_and_lock_many(self, values, expire=7200):
+        return await self.exists_many(values, expire)
+
+    async def confirm(self, value, expire=2592000):
+        return (await self.confirm_many([value], expire))[0]
+
+    async def confirm_many(self, values, expire=2592000):
+        return await self.insert_many(values, expire)

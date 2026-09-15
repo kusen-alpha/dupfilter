@@ -48,6 +48,9 @@ class SQLFilter(Filter):
     def _exists_table(self):
         return False
 
+    def _placeholder_many(self, count):
+        return ", ".join(["%s"] * count)
+
     def _create_table(self):
         if self._exists_table():
             return
@@ -65,15 +68,18 @@ class SQLFilter(Filter):
 
     def _exists_sql(self, values):
         values = [self._value_hash_and_compress(value) for value in values]
-        s_values = str(tuple(values)) if len(
-            values) > 1 else f"('{values[0]}')"
-        sql = f"select id from {self.table} where id in {s_values}"
-        return sql, values
+        if not values:
+            return "", (), values
+        placeholders = self._placeholder_many(len(values))
+        sql = f"select id from {self.table} where id in ({placeholders})"
+        return sql, values, values
 
     @decorate_warning
     def exists_many(self, values):
-        sql, new_values = self._exists_sql(values)
-        self.cursor.execute(sql)
+        sql, params, new_values = self._exists_sql(values)
+        if not new_values:
+            return []
+        self.cursor.execute(sql, params)
         result = self.cursor.fetchall()
         try:
             result = [res[0] for res in result]
@@ -131,7 +137,7 @@ if __name__ == '__main__':
                            database='test')
     cursor = conn.cursor()
 
-    f = SQLFilter(conn, cursor, 'dup', record_time=False)
+    f = SQLFilter(conn, 'dup', record_time=False)
     r = f.exists_and_insert_many(['1', '2', '5'])
     # r = f.insert_many(['1', '2', '6'])
     print(r)

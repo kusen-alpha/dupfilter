@@ -11,14 +11,15 @@ from dupfilter.filters import Filter, decorate_warning
 
 def get_files(base_path, allow_empty=False, deep=False):
     files = []
-    for name in os.listdir(base_path):
-        path = os.path.join(base_path, name)
-        if os.path.isfile(path):
-            if not allow_empty and os.path.getsize(path) <= 0:
-                continue
-            files.append(path)
-        elif os.path.isdir(path) and deep:
-            files.extend(get_files(path, allow_empty, deep))
+    with os.scandir(base_path) as iterator:
+        for entry in iterator:
+            if entry.is_file(follow_symlinks=False):
+                if not allow_empty and entry.stat(
+                        follow_symlinks=False).st_size <= 0:
+                    continue
+                files.append(entry.path)
+            elif entry.is_dir(follow_symlinks=False) and deep:
+                files.extend(get_files(entry.path, allow_empty, deep))
     return files
 
 

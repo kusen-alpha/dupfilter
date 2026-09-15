@@ -5,6 +5,4 @@
 
 import setuptools
 
-setuptools.setup(
-    py_modules=["dupfilter"]
-)
+setuptools.setup()

@@ -147,6 +147,8 @@ class RedisBloomFilter(RedisFilter):
         return keys, offsets, values
 
     def _get_block(self, value):
+        if self.block_num == 1:
+            return ''
         return str(int(value[0:2], 16) % self.block_num)
 
 

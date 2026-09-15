@@ -73,6 +73,7 @@
 1. 多种方案提供不同场景需求。
 2. 基于Lua脚本支持批量操作，速度快。
 3. 支持异步，可快速集成到异步代码和异步框架中。
+4. Reset定时逻辑基于time.monotonic实现，无运行时三方依赖。
 
 # 去重示例
 
@@ -147,12 +148,29 @@ print(flt_counter.any(), flt_counter.all(), flt_counter.count())
 
 和上述示例类似
 
+## 异常处理
+
+去重操作失败时默认返回 `default_stat`，避免异常中断业务流程；
+如需快速暴露后端故障，可传入 `raise_on_error=True`，异常会直接向上抛出。
+
+```python
+from dupfilter import MemoryFilter
+
+flt = MemoryFilter(raise_on_error=True)
+```
+
 # 相关库
 
 1. redis：redis/aioredis
 2. mysql：pymysql/aiomysql
 3. sqlite：sqlite3
 4. oracle：cx_Oracle/cx_Oracle_async
+
+# 测试
+
+```bash
+python -m unittest discover -v
+```
 
 # 后续优化
 

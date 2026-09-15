@@ -130,7 +130,7 @@ class AsyncRedisSetFilter(RedisSetFilter):
 
     @decorate_warning
     async def exists_and_insert(self, value):
-        stats = await self.exists_and_insert([value])
+        stats = await self.exists_and_insert_many([value])
         return stats[0]
 
     @decorate_warning

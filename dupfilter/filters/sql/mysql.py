@@ -39,10 +39,12 @@ class AsyncMySQLFilter(SQLFilter, Filter):
 
     @decorate_warning
     async def exists_many(self, values):
-        sql, new_values = self._exists_sql(values)
+        sql, params, new_values = self._exists_sql(values)
+        if not new_values:
+            return []
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cur:
-                await cur.execute(sql)
+                await cur.execute(sql, params)
                 result = await cur.fetchall()
                 result = [res[0] for res in result]
                 stats = [value in result for value in new_values]
@@ -74,6 +76,9 @@ class AsyncMySQLFilter(SQLFilter, Filter):
         values = [value for stat, value in zip(stats, values) if not stat]
         await self.insert_many(values)
         return stats
+
+    async def close(self):
+        await self.pool.close()
 
 
 if __name__ == '__main__':

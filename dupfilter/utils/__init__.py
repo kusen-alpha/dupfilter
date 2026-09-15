@@ -11,7 +11,10 @@ SFB_CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789
 
 def md5(s):
     _md5 = hashlib.md5()
-    _md5.update(s.encode('utf8'))
+    if isinstance(s, str):
+        _md5.update(s.encode('utf8'))
+    else:
+        _md5.update(s)
     return _md5.hexdigest()
 
 
