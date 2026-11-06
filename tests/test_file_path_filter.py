@@ -1,9 +1,10 @@
 # -*- coding:utf-8 -*-
+import asyncio
 import os
 import tempfile
 import unittest
 
-from dupfilter.filters.file_path import FilePathFilter
+from dupfilter.filters.file_path import AsyncFilePathFilter, FilePathFilter
 
 from .helpers import quiet_logger
 
@@ -67,3 +68,21 @@ class FilePathFilterTests(unittest.TestCase):
         flt = FilePathFilter(
             self.base, allow_empty=True, deep=True, logger=quiet_logger())
         self.assertFalse(flt.exists("not-exist"))
+
+
+class AsyncFilePathFilterTests(unittest.TestCase):
+    def test_awaitable_exists(self):
+        async def case():
+            with tempfile.TemporaryDirectory() as directory:
+                with open(os.path.join(directory, "a.txt"), "w") as handle:
+                    handle.write("x")
+                with open(os.path.join(directory, "b.txt"), "w") as handle:
+                    handle.write("x")
+                flt = AsyncFilePathFilter(directory, logger=quiet_logger())
+                self.assertTrue(await flt.exists("a.txt"))
+                self.assertFalse(await flt.exists("missing.txt"))
+                self.assertEqual(
+                    await flt.exists_many(["a.txt", "b.txt", "nope"]),
+                    [True, True, False])
+
+        asyncio.run(case())

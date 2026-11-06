@@ -1,0 +1,19 @@
+[tool.ruff]
+line-length = 88
+target-version = "py38"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = ["E501", "UP009"]
+
+[tool.mypy]
+python_version = "3.8"
+ignore_missing_imports = true
+check_untyped_defs = false
+warn_unused_ignores = true
+strict = true
+
+[[tool.mypy.overrides]]
+module = ["redis", "aioredis", "pymysql", "aiomysql", "cx_Oracle",
+          "cx_Oracle_async", "aiosqlite", "oracledb"]
+ignore_missing_imports = true

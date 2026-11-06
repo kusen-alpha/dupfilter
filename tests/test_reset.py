@@ -12,17 +12,17 @@ from .helpers import quiet_logger
 class CountingMemoryReset(MemoryReset):
     def __init__(self, *args, **kwargs):
         self.reset_calls = 0
-        super(CountingMemoryReset, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def reset(self):
         self.reset_calls += 1
-        super(CountingMemoryReset, self).reset()
+        super().reset()
 
 
 class FakeReset(Reset):
     def __init__(self, *args, **kwargs):
         self.reset_calls = 0
-        super(FakeReset, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     @property
     def current_count(self):

@@ -3,13 +3,17 @@
 # email: 1194542196@qq.com
 # date: 2025/6/17
 
+from __future__ import annotations
 
 import os
+from collections.abc import Iterable
+from typing import Any, Callable
 
-from dupfilter.filters import Filter, decorate_warning
+from dupfilter.filters import Filter, decorate_warning, to_thread
 
 
-def get_files(base_path, allow_empty=False, deep=False):
+def get_files(base_path: str, allow_empty: bool = False,
+              deep: bool = False) -> list[str]:
     files = []
     with os.scandir(base_path) as iterator:
         for entry in iterator:
@@ -24,27 +28,48 @@ def get_files(base_path, allow_empty=False, deep=False):
 
 
 class FilePathFilter(Filter):
-    def __init__(self, base_path, allow_empty=False,
-                 deep=False, value_hash_func=None,
-                 *args, **kwargs):
+    def __init__(self, base_path: str, allow_empty: bool = False,
+                 deep: bool = False,
+                 value_hash_func: Callable[[Any], Any] | None = None,
+                 *args: Any, **kwargs: Any) -> None:
         self.base_path = base_path
         self.allow_empty = allow_empty
         self.deep = deep
-        super(FilePathFilter, self).__init__(
-            value_hash_func=value_hash_func,
-            *args, **kwargs)
+        kwargs["value_hash_func"] = value_hash_func
+        super().__init__(*args, **kwargs)
 
     @decorate_warning
-    def exists(self, value):
+    def exists(self, value: Any) -> bool:
         files = get_files(self.base_path, self.allow_empty, self.deep)
         names = [os.path.basename(file) for file in files]
         return value in names
 
     @decorate_warning
-    def exists_many(self, values):
+    def exists_many(self, values: Iterable[Any]) -> list[bool]:
         files = get_files(self.base_path, self.allow_empty, self.deep)
         names = [os.path.basename(file) for file in files]
         return [value in names for value in values]
+
+
+class AsyncFilePathFilter:
+    """Async API over :class:`FilePathFilter`.
+
+    Directory scanning is blocking, so each call runs in a worker thread
+    via :func:`to_thread` and keeps the event loop responsive.
+    """
+
+    def __init__(self, base_path: str, allow_empty: bool = False,
+                 deep: bool = False, *args: Any, **kwargs: Any) -> None:
+        kwargs["allow_empty"] = allow_empty
+        kwargs["deep"] = deep
+        self._flt: Any = FilePathFilter(base_path, *args, **kwargs)
+
+    async def exists(self, value: Any, **kwargs: Any) -> Any:
+        return await to_thread(self._flt.exists, value, **kwargs)
+
+    async def exists_many(self, values: Iterable[Any],
+                          **kwargs: Any) -> Any:
+        return await to_thread(self._flt.exists_many, values, **kwargs)
 
 
 if __name__ == '__main__':

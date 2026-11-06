@@ -3,6 +3,10 @@
 # email: 1194542196@qq.com
 # date: 2023/9/6
 
+from __future__ import annotations
+
+from collections.abc import Iterable
+from typing import Any
 
 from dupfilter.filters import decorate_warning
 from dupfilter.filters.redis import RedisFilter
@@ -45,98 +49,161 @@ local count = ARGV[1]
 redis.call('SPOP', key, count)
 return true
 """
+RELEASE_SCRIPT = """
+local keys = KEYS
+local values = ARGV
+for index, key in pairs(keys) do
+    redis.call('SREM', key, values[index])
+end
+return true
+"""
 
 
 class RedisSetFilter(RedisFilter):
-    def __init__(self, server, key, block_num=1, *args, **kwargs):
+    def __init__(self, server: Any, key: str, block_num: int = 1,
+                 *args: Any, **kwargs: Any) -> None:
         self.key = key
         self.block_num = block_num
-        super(RedisSetFilter, self).__init__(server, *args, **kwargs)
+        super().__init__(server, *args, **kwargs)
         self._exists_script = self.server.register_script(EXISTS_SCRIPT)
         self._insert_script = self.server.register_script(INSERT_SCRIPT)
         self._exists_and_insert_script = self.server.register_script(
             EXISTS_AND_INSERT_SCRIPT)
+        self._release_script = self.server.register_script(RELEASE_SCRIPT)
 
     @decorate_warning
-    def exists(self, value):
+    def exists(self, value: Any) -> Any:
         return self.exists_many([value])[0]
 
     @decorate_warning
-    def exists_many(self, values):
+    def exists_many(self, values: Iterable[Any]) -> Any:
         keys, new_values = self._get_keys_and_values(values)
-        stats = self._exists_script(keys=keys, args=new_values)
-        stats = [bool(stat) for stat in stats]
+        raw = self._exists_script(keys=keys, args=new_values)
+        stats = [bool(stat) for stat in raw]
         self._log_exists(values, new_values, stats)
         return stats
 
     @decorate_warning
-    def exists_and_insert(self, value):
+    def exists_and_insert(self, value: Any) -> Any:
         return self.exists_and_insert_many([value])[0]
 
     @decorate_warning
-    def exists_and_insert_many(self, values):
+    def exists_and_insert_many(self, values: Iterable[Any]) -> Any:
         keys, new_values = self._get_keys_and_values(values)
-        stats = self._exists_and_insert_script(keys=keys, args=new_values)
-        stats = [bool(stat) for stat in stats]
+        raw = self._exists_and_insert_script(keys=keys, args=new_values)
+        stats = [bool(stat) for stat in raw]
         self._log_exists(values, new_values, stats)
         return stats
 
     @decorate_warning
-    def insert(self, value):
+    def insert(self, value: Any) -> Any:
         return self.insert_many([value])[0]
 
     @decorate_warning
-    def insert_many(self, values):
+    def insert_many(self, values: Iterable[Any]) -> Any:
         keys, values = self._get_keys_and_values(values)
         stat = self._insert_script(keys=keys, args=values)
         return [bool(stat) for _ in range(len(values))]
 
-    def _get_keys_and_values(self, values):
+    def _get_keys_and_values(self, values: Iterable[Any]
+                             ) -> tuple[list[str], list[Any]]:
         values = [self._value_hash(value) for value in values]
         keys = [self.key + self._get_block(value) for value in values]
         values = [self._value_compress(value) for value in values]
         return keys, values
 
-    def _get_block(self, value):
+    def _get_block(self, value: Any) -> str:
         if self.block_num == 1:
             return ''
         return str(int(value, 16) % self.block_num)
 
+    # Two-phase claim/confirm: exists_and_lock claims a value, confirm()
+    # keeps it, release() removes it again so a retry can reclaim it.
+    def exists_and_lock(self, value: Any) -> Any:
+        return self.exists_and_insert(value)
+
+    def exists_and_lock_many(self, values: Iterable[Any]) -> Any:
+        return self.exists_and_insert_many(values)
+
+    def confirm(self, value: Any) -> Any:
+        return self.insert(value)
+
+    def confirm_many(self, values: Iterable[Any]) -> Any:
+        return self.insert_many(values)
+
+    @decorate_warning
+    def release(self, value: Any) -> Any:
+        return self.release_many([value])[0]
+
+    @decorate_warning
+    def release_many(self, values: Iterable[Any]) -> Any:
+        keys, new_values = self._get_keys_and_values(values)
+        self._release_script(keys=keys, args=new_values)
+        return [True for _ in new_values]
+
 
 class AsyncRedisSetFilter(RedisSetFilter):
     @decorate_warning
-    async def insert(self, value):
+    async def insert(self, value: Any) -> bool:
         stats = await self.insert_many([value])
         return stats[0]
 
     @decorate_warning
-    async def insert_many(self, values):
+    async def insert_many(self, values: Iterable[Any]) -> list[bool]:
         keys, values = self._get_keys_and_values(values)
         stat = await self._insert_script(keys=keys, args=values)
         return [bool(stat) for _ in range(len(values))]
 
     @decorate_warning
-    async def exists(self, value):
+    async def exists(self, value: Any) -> bool:
         stats = await self.exists_many([value])
         return stats[0]
 
     @decorate_warning
-    async def exists_many(self, values):
+    async def exists_many(self, values: Iterable[Any]) -> list[bool]:
         keys, new_values = self._get_keys_and_values(values)
-        stats = await self._exists_script(keys=keys, args=new_values)
-        stats = [bool(stat) for stat in stats]
+        raw = await self._exists_script(keys=keys, args=new_values)
+        stats = [bool(stat) for stat in raw]
         self._log_exists(values, new_values, stats)
         return stats
 
     @decorate_warning
-    async def exists_and_insert(self, value):
+    async def exists_and_insert(self, value: Any) -> bool:
         stats = await self.exists_and_insert_many([value])
         return stats[0]
 
     @decorate_warning
-    async def exists_and_insert_many(self, values):
+    async def exists_and_insert_many(self, values: Iterable[Any]
+                                     ) -> list[bool]:
         keys, new_values = self._get_keys_and_values(values)
-        stats = await self._exists_and_insert_script(keys=keys, args=values)
-        stats = [bool(stat) for stat in stats]
+        raw = await self._exists_and_insert_script(keys=keys, args=values)
+        stats = [bool(stat) for stat in raw]
         self._log_exists(values, new_values, stats)
         return stats
+
+    @decorate_warning
+    async def exists_and_lock(self, value: Any) -> bool:
+        return await self.exists_and_insert(value)
+
+    @decorate_warning
+    async def exists_and_lock_many(self, values: Iterable[Any]) -> list[bool]:
+        return await self.exists_and_insert_many(values)
+
+    @decorate_warning
+    async def confirm(self, value: Any) -> bool:
+        return await self.insert(value)
+
+    @decorate_warning
+    async def confirm_many(self, values: Iterable[Any]) -> list[bool]:
+        return await self.insert_many(values)
+
+    @decorate_warning
+    async def release(self, value: Any) -> bool:
+        result = await self.release_many([value])
+        return result[0]
+
+    @decorate_warning
+    async def release_many(self, values: Iterable[Any]) -> list[bool]:
+        keys, new_values = self._get_keys_and_values(values)
+        await self._release_script(keys=keys, args=new_values)
+        return [True for _ in new_values]

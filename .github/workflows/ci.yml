@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: dupfilter
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=10s --health-timeout=5s --health-retries=10
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install -e . redis pymysql aiosqlite oracledb
+      - run: python -m unittest discover -v
+        env:
+          DUPFILTER_REDIS_URL: redis://localhost:6379/0
+          DUPFILTER_MYSQL_HOST: 127.0.0.1
+          DUPFILTER_MYSQL_PORT: "3306"
+          DUPFILTER_MYSQL_USER: root
+          DUPFILTER_MYSQL_PASSWORD: root
+          DUPFILTER_MYSQL_DB: dupfilter
+      - run: |
+          pip install coverage
+          coverage run -m unittest discover
+          coverage report -m
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install ruff mypy
+      - run: ruff check dupfilter tests
+      - run: mypy dupfilter
+
+  benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e .
+      - run: python -m benchmarks.measure_bloom_fp
+      - run: python -m benchmarks.bench_concurrency
